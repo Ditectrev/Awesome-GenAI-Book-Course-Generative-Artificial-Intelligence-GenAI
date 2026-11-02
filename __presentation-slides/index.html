@@ -965,6 +965,149 @@
 * Tools run in your process; [PydanticAI](https://github.com/pydantic/pydantic-ai) when that loop is the product <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
 * Fail closed; fill a sheet when a sheet is the interface <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
 * Next loop: Retrieval-Augmented Generation (RAG) <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+## Retrieval-Augmented Generation (RAG) <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Fetch a few passages, then ask the model to answer from them <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Print the passages before you grade the prose <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Five questions, each with a file and a quote you can point at <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### The working RAG loop <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Ingest, chunk, embed, retrieve, generate <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* One embedding model per index; rebuild when it changes <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The prompt stays put until the right chunk is in the list <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Ingest, chunk, embed, retrieve, generate <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Chunk on headings, pages, and rows; keep source, page, and heading <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Retrieve a small k and print the chunks <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The answer names a source you actually passed in <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* If the chunks lack the answer, the model says so <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### When RAG is the wrong fix <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* A format or a schema is a prompt, not a corpus <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A calculation or a write is a tool <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A repo change is a coding agent with a test command <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Relationships across the set may need a graph, not a finer chunk <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* No named source file means you are not ready to index <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Ingest documents you actually have <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Read three extracted pages before you embed the folder <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Headers, footers, and flattened tables become confident wrong answers <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Unstructured and Docling for PDFs and office files <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [Unstructured](https://github.com/Unstructured-IO/unstructured): mixed files into titled elements and tables <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Docling](https://github.com/docling-project/docling): layout-aware PDF, DOCX, PPTX, HTML <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* One parser; add a second only when the first drops the table you need <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Firecrawl and Crawl4AI for websites <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [Firecrawl](https://github.com/mendableai/firecrawl): hosted crawl to markdown, with the URL and the fetch time <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Crawl4AI](https://github.com/unclecode/crawl4ai): the crawler you run when pages cannot leave <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A seed, a depth, an allowlist of domains; then the same chunk and embed steps <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Indexes and vector stores <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* One framework and one store for the week <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The framework loads and calls; the store keeps vectors and metadata <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### LlamaIndex as a data framework <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [LlamaIndex](https://github.com/run-llama/llama_index): load, chunk, embed, retrieve, synthesize <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A script you can rerun, and an index directory you can delete <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* After every rebuild, compare chunk ids on the same five questions <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### LangChain retrievers and loaders <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [LangChain](https://github.com/langchain-ai/langchain): loaders and a retriever that returns documents <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Log the documents; a chain that only prints the answer skips the test <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* LangChain or LlamaIndex for the week, not both <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Haystack pipelines <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [Haystack](https://github.com/deepset-ai/haystack): each stage is a node you can swap <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Worth it when two people will edit the stages <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The five questions are still the smoke test <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Chroma, Qdrant, Weaviate, and Milvus <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [Chroma](https://github.com/chroma-core/chroma): laptop directory, first store <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Qdrant](https://github.com/qdrant/qdrant): a server and payload filters <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Weaviate](https://github.com/weaviate/weaviate): hybrid query when codes and names must match <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Milvus](https://github.com/milvus-io/milvus): when one node is no longer the corpus <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Record collection, embedding model, and distance; rerun after every rebuild <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Search that does not embarrass you <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Print the chunks; shared vocabulary is not the right passage <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Fix search before you touch the prompt <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Hybrid search, rerankers, and citations <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Keywords for exact tokens, vectors for paraphrases <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A reranker reorders candidates; it cannot retrieve a chunk the first pass missed <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Citations may only name chunks you passed in <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Show the passage under the citation <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Microsoft GraphRAG when relationships matter <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [GraphRAG](https://github.com/microsoft/graphrag): entities, communities, and summaries <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Use it when one true paragraph still misses the edge between pieces <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Extraction over the corpus happens before the first question <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Start on chunks; add the graph when you can show the question chunks fail <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Evaluating retrieval before you tune the prompt <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* For each question: did the expected quote appear, and at what rank <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Absent quote: change the index; buried quote: change k or rerank <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Edit the prompt only when the quote is already in the context <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A five-row yes/no sheet is the harness until the corpus grows <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Summary: Retrieval-Augmented Generation (RAG) <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Ingest with [Docling](https://github.com/docling-project/docling) or [Unstructured](https://github.com/Unstructured-IO/unstructured); crawl with [Firecrawl](https://github.com/mendableai/firecrawl) or [Crawl4AI](https://github.com/unclecode/crawl4ai) <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* One of [LlamaIndex](https://github.com/run-llama/llama_index), [LangChain](https://github.com/langchain-ai/langchain), or [Haystack](https://github.com/deepset-ai/haystack) <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Chroma](https://github.com/chroma-core/chroma) first; hybrid search, a reranker, and citations <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [GraphRAG](https://github.com/microsoft/graphrag) when relationships are the question <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Next loop: Agents and Multi-Step Workflows <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
 					</textarea>
 				</section>
 			</div>

@@ -1219,3 +1219,134 @@ Run the suite when you change the schema, the prompt file, or the model id. One 
 ### Summary: Structured Outputs and Tool Calling
 
 Trust a model when the reply validates against a schema you store next to the test. Use native structured outputs on [OpenAI](https://developers.openai.com/api/docs/guides/structured-outputs), [Anthropic](https://platform.claude.com/docs/en/build-with-claude/structured-outputs), and [Gemini](https://ai.google.dev/gemini-api/docs/structured-output) for the answer shape, and their tool or function-calling APIs when your code must act. [Instructor](https://github.com/567-labs/instructor) retries a Pydantic model across providers. [Outlines](https://github.com/dottxt-ai/outlines) constrains decoding on a server you run. [BAML](https://github.com/boundaryml/baml) turns the prompt and the types into a generated client. [PydanticAI](https://github.com/pydantic/pydantic-ai) is the typed loop when there is more than one tool call. Cap retries, log the raw payload, and leave the record empty when validation fails. If the real interface is a sheet or a form, extract, classify, and fill that row. Next is **Retrieval-Augmented Generation (RAG)**, where the text you extract from is a document you retrieved, not a paragraph pasted into the prompt.
+
+## Retrieval-Augmented Generation (RAG)
+
+The structured call in the last chapter can only extract what you put in the prompt. **Retrieval-Augmented Generation (RAG)** fetches a few passages from documents you already have, puts those passages in the prompt, and asks the model to answer from them. The model is still a generator. The index is what keeps it on your files.
+
+The smoke test changes. Before you grade the prose, print the passages you retrieved. If the right paragraph is missing, the answer will be a guess, and editing the prompt will not put the paragraph back.
+
+### The working RAG loop
+
+Five steps, in this order, on a corpus you can open in a file browser:
+
+1. **Ingest.** Turn files or pages into text, and keep the source path, page, and heading on each piece.
+2. **Chunk.** Split that text into pieces small enough to embed and large enough to answer a question.
+3. **Embed.** Turn each chunk into a vector with one recorded embedding model.
+4. **Retrieve.** Given a question, return the top chunks, plus any keyword matches you asked for.
+5. **Generate.** Call the model with the question, those chunks, and a contract: answer from the chunks, and name the source. If the chunks do not contain the answer, say so.
+
+Run steps 1–4 until the right chunk is in the list. Only then spend a generation. Log the embedding model id the way you log the chat model id. Vectors from two embedding models do not belong in the same index.
+
+#### Ingest, chunk, embed, retrieve, generate
+
+Start with a folder of documents you would be willing to show a colleague, and five questions whose answers you can point at with a finger. Write the expected source next to each question: file, page or heading, and a short quote. That list is the retrieval test. It is not a prompt.
+
+**Chunk** on structure when the file has it: headings, slides, pages, rows. A fixed token window is the fallback, with a small overlap so a sentence cut in half still appears in one piece. Store metadata on every chunk: source, page, heading, and a date if the file has one. A later filter on "only the 2024 handbook" is metadata. It is not a smarter paragraph.
+
+**Embed** with one model and write its name into the index config. Hosted embedding APIs (the same accounts as the first working loop) are fine for a first index. A local embedding model belongs here when the documents cannot leave the machine. Re-embed the corpus when you change the model. Do not append new vectors from a second model into an old index.
+
+**Retrieve** a small k, often 4 to 8, and print them. **Generate** with the system prompt from the prompting chapter: the chunks are evidence, the question is the task, and the output contract includes a citation (file and page, or the chunk id). Use the structured-output schema when the product needs a row plus a list of sources. The citation has to match a chunk you actually passed in. A fabricated filename fails the test.
+
+Change one thing and rerun the five questions: chunk size, metadata, k, or the embedding model. The prompt stays put until retrieval is boringly right.
+
+#### When RAG is the wrong fix
+
+RAG is a search problem with a generator on the end. Reach for something else when there is no corpus, or when the corpus is not where the answer lives.
+
+- The fact is already in the user message, or it is a format you can show with a prompt and a schema. That is Prompting, and Structured Outputs.
+- The answer is a calculation, a ticket update, or a test run. That is a tool, not a paragraph.
+- The task is a change in a repository. That is a coding agent with search over the tree, which is a form of retrieval, and it still needs the test command from Coding Agents and Skills.
+- The question needs a relationship across the whole set ("how do these teams depend on each other"), and every single paragraph is locally true and globally useless. Microsoft GraphRAG, later in this chapter, is the tool to try before you paste the corpus into the window.
+- You hope a fine-tune will memorize the handbook. Shipping, Cost, and Operations keeps adapters for the case where retrieval already returns the right text and the model still will not follow it. Retrieval comes first.
+
+If you cannot name the file that should have answered question three, you do not have a RAG project yet. You have a writing project.
+
+### Ingest documents you actually have
+
+The index is only as good as the text you extracted. A PDF full of headers, footers, and a table read as a single line will retrieve garbage with a perfect embedding model. Look at three extracted pages before you embed the folder.
+
+#### [Unstructured](https://github.com/Unstructured-IO/unstructured) and [Docling](https://github.com/docling-project/docling) for PDFs and office files
+
+**[Unstructured](https://github.com/Unstructured-IO/unstructured)** ([docs](https://docs.unstructured.io/)) partitions PDFs, Office files, and HTML into elements: titles, narrative text, tables, lists. Use it when the folder is mixed and you want one partition step with metadata you can filter on. Read the elements for one file. If the table you care about became a blob of numbers, fix the partition before you chunk.
+
+**[Docling](https://github.com/docling-project/docling)** ([docs](https://docling-project.github.io/docling/)) parses PDF, DOCX, PPTX, and HTML into a layout-aware document, including tables. Use it when the documents are real reports and the answer is often in a table or a section, not in a paragraph of prose. Docling's own technical report is a fine first file to parse so you can see the structure on something public.
+
+Pick one parser for the folder. Run it on the five source files from your question list. Diff the extracted text against the page. Then chunk. A second parser is justified when the first one drops the table you needed for question two.
+
+#### [Firecrawl](https://github.com/mendableai/firecrawl) and [Crawl4AI](https://github.com/unclecode/crawl4ai) for websites
+
+**[Firecrawl](https://docs.firecrawl.dev/)** ([repo](https://github.com/mendableai/firecrawl)) turns a site into markdown or structured extracts through an API: scrape, crawl, and map. Use it when the corpus is a public or authenticated site and you want a hosted crawl with a key, the same way you use a hosted chat model. Respect the site's terms and robots rules. Store the URL and the fetch time on each page. A page you crawled last quarter is a stale chunk, and the model will cite it with confidence.
+
+**[Crawl4AI](https://github.com/unclecode/crawl4ai)** is the open-source crawler you run yourself. It drives a browser and emits markdown aimed at a model. Use it when the pages are yours, when you cannot send them to a crawl API, or when you need the crawl in the same repo as the index job.
+
+Crawl a path, not the internet. A seed URL, a depth or a sitemap, and a list of domains you allow. Write the pages to disk first, then run the same chunk and embed steps you used for PDFs. The retrieval test does not care that the source was HTML. It cares that question four's quote is in a chunk.
+
+### Indexes and vector stores
+
+An index is the thing you query. A framework is how you load, chunk, and call the model. A vector store is where the vectors and the metadata sit. You can outgrow a framework and keep the store, or the reverse. Write down which is which before you install three of them.
+
+For this week, one framework and one store. The five questions stay the test.
+
+#### [LlamaIndex](https://github.com/run-llama/llama_index) as a data framework
+
+**[LlamaIndex](https://developers.llamaindex.ai/)** ([repo](https://github.com/run-llama/llama_index)) is built around the index: load documents, chunk, embed, retrieve, synthesize. Start here when the product is "ask questions of this folder" and you want that loop with the fewest new nouns. Use a reader that matches the parser you already chose, including Docling if that is what produced clean text.
+
+Keep the index build as a script you can rerun. Persist the index to a directory you can delete. If the only copy lives in a notebook you cannot find, you do not have a loop. After a rebuild, rerun the five questions and compare which chunk ids came back.
+
+#### [LangChain](https://github.com/langchain-ai/langchain) retrievers and loaders
+
+**[LangChain](https://docs.langchain.com/)** ([repo](https://github.com/langchain-ai/langchain)) is a box of loaders and retrievers. Use it when you already have LangChain in the app, or when the source is one of its loaders (Docling, Unstructured, Firecrawl, a drive, a database) and you want a `Document` with metadata in a shape the rest of the stack expects. A retriever is the object that hides "embed the question, query the store, return documents." Log the documents. A chain that only returns the final answer has skipped the only step that tells you whether search worked.
+
+LangChain and LlamaIndex solve the same week. Installing both to compare their tutorials will split your schema. Pick the one whose loader already reads your files.
+
+#### [Haystack](https://github.com/deepset-ai/haystack) pipelines
+
+**[Haystack](https://docs.haystack.deepset.ai/)** ([repo](https://github.com/deepset-ai/haystack)) is an explicit pipeline: components for converting, embedding, retrieving, and generating, wired in order. Use it when you want to see each stage as a node you can swap, and when you would rather debug a pipeline graph than a hidden chain. The integrations cover the same neighbors: Docling, Unstructured, Firecrawl, and the vector stores below.
+
+A Haystack pipeline earns its place when two people will edit the stages. For a solo smoke test, the extra graph is optional. The five questions are not.
+
+#### [Chroma](https://github.com/chroma-core/chroma), [Qdrant](https://github.com/qdrant/qdrant), [Weaviate](https://github.com/weaviate/weaviate), and [Milvus](https://github.com/milvus-io/milvus)
+
+The store holds vectors, the text, and the metadata. Filter on metadata in the query. A vector-only search over a mixed corpus will retrieve a chunk from the wrong year that happens to share words.
+
+- **[Chroma](https://docs.trychroma.com/)** ([repo](https://github.com/chroma-core/chroma)). Embedded, on the laptop, one directory. The right first store for the five-question test. You can move the same chunks later.
+- **[Qdrant](https://qdrant.tech/documentation/)** ([repo](https://github.com/qdrant/qdrant)). Local or a server, with payload filters. Move here when you need a process that stays up and filters that Chroma's toy collection is getting awkward.
+- **[Weaviate](https://weaviate.io/developers/weaviate)** ([repo](https://github.com/weaviate/weaviate)). Hybrid search is a first-class query: vectors and keywords together. Useful when exact tokens (error codes, SKUs, names) matter as much as paraphrases.
+- **[Milvus](https://milvus.io/docs)** ([repo](https://github.com/milvus-io/milvus)). The scale-out store. Use it when the corpus or the query rate has left a single node, not on the afternoon you are still fixing chunk boundaries.
+
+Whatever you pick, record the collection name, the embedding model, and the distance metric. A rebuild that silently changes any of those is a different index. Rerun the five questions after every rebuild.
+
+### Search that does not embarrass you
+
+Embarrassing search returns a chunk that shares vocabulary with the question and misses the passage that answers it. You notice only if you print the chunks. The fixes are mechanical: keywords plus vectors, a rerank step, citations the user can check, and a score on the retrieval test before anyone touches the prompt.
+
+#### Hybrid search, rerankers, and citations
+
+**Hybrid search** runs a keyword query (BM25 or the store's sparse index) and a vector query, then merges the lists. Exact strings survive the keyword side. Paraphrases survive the vector side. Weaviate and several of the other stores can do this in one query. If your store cannot, run both and merge by hand for the smoke test so you can see the gain on the five questions. Question wording that is an error code or a proper noun is the case that usually moves.
+
+A **reranker** is a second model that reads the question plus each candidate chunk and reorders them. It is slower than the first retrieval and it is worth it when the right chunk is in the top 20 and not in the top 4. Keep the first-pass k larger, rerank down to the chunks you will actually put in the prompt, and log both lists. If the right chunk never enters the first list, a reranker cannot invent it. Fix the chunking or the index.
+
+**Citations** are part of the contract, not a footnote you hope for. The generator may only name sources you passed in. The app should render the file and the page, and the test should fail when the named source is not in the retrieved set. A fluent answer with no citation is an unscored answer. Show the passage under the citation so a reader can disagree with the model without opening the corpus.
+
+#### [Microsoft GraphRAG](https://github.com/microsoft/graphrag) when relationships matter
+
+**[GraphRAG](https://github.com/microsoft/graphrag)** builds an entity graph from the corpus and summarizes communities of that graph, then retrieves those summaries as well as local text. Use it when the questions are about connections: who reports to whom, which services depend on which config, what changed across a set of incident reports. A vector index will happily return one accurate paragraph about one team and miss the edge between teams.
+
+It costs an extraction pass over the corpus, with a model in the loop, before anyone asks a question. Run it on a subset you already understand. Ask a relationship question your five-question list was failing, and compare the retrieved summary to the vector index's top chunks. If the graph summary answers it and the chunks did not, keep GraphRAG for that class of question. If both miss it, the fact is not in the documents. No index will add it.
+
+Do not start on GraphRAG. Start on chunks. Add the graph when you can show a question the chunks cannot answer and the relationships can.
+
+#### Evaluating retrieval before you tune the prompt
+
+Score retrieval on the five questions, then on a larger set when the five are green. For each question, record whether the expected quote appeared in the retrieved chunks, at what rank, and which file came back instead. That is a pass/fail you can put in the same smoke test as the schema checks.
+
+Change the index when the quote is absent. Change k or add a reranker when the quote is present but buried. Change the prompt only when the quote is in the prompt and the answer still ignores it, cites the wrong chunk, or adds a fact that is not in the text. The last case is a contract failure. The structured-output schema can require a list of chunk ids, and the test can reject ids you did not retrieve.
+
+Evaluation, Tracing, and Guardrails will name [Ragas](https://github.com/explodinggradients/ragas) and [DeepEval](https://github.com/confident-ai/deepeval) for the fuller checks. You do not need those libraries to refuse a prompt edit while question two still retrieves the wrong page. A spreadsheet with five rows and a yes/no column is the whole harness until the corpus grows.
+
+When the five questions retrieve the right pages twice in a row after a rebuild, the loop is real. The next chapter puts that retrieve step inside an agent that can decide to search, call a tool, and stop.
+
+### Summary: Retrieval-Augmented Generation (RAG)
+
+RAG is ingest, chunk, embed, retrieve, and only then generate, tested by whether the right passage came back. Parse real files with [Unstructured](https://github.com/Unstructured-IO/unstructured) or [Docling](https://github.com/docling-project/docling), and real sites with [Firecrawl](https://github.com/mendableai/firecrawl) or [Crawl4AI](https://github.com/unclecode/crawl4ai). Build the loop in [LlamaIndex](https://github.com/run-llama/llama_index), [LangChain](https://github.com/langchain-ai/langchain), or [Haystack](https://github.com/deepset-ai/haystack), and store vectors in [Chroma](https://github.com/chroma-core/chroma) until you need [Qdrant](https://github.com/qdrant/qdrant), [Weaviate](https://github.com/weaviate/weaviate), or [Milvus](https://github.com/milvus-io/milvus). Add hybrid search, a reranker, and citations so a wrong paragraph is visible. Use [GraphRAG](https://github.com/microsoft/graphrag) when the question is about relationships the best paragraph cannot hold. Score retrieval before you edit the prompt. Next is **Agents and Multi-Step Workflows**, where retrieval is one tool in a loop that can plan, act, and stop.
