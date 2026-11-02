@@ -1119,3 +1119,103 @@ That is the week: one agent, one skill you edited, one hook if a rule must be me
 ### Summary: Coding Agents and Skills
 
 A coding agent is a model with your files and your shell. Stay on one of [Cursor](https://cursor.com/), [Claude Code](https://github.com/anthropics/claude-code), [Codex](https://github.com/openai/codex), or [GitHub Copilot](https://github.com/features/copilot) for a week, or on [Aider](https://github.com/Aider-AI/aider) or [OpenCode](https://github.com/sst/opencode) if you want the terminal. Leave [Continue](https://github.com/continuedev/continue) to existing installs: Cursor acquired it, and the repo is unmaintained. Change default behavior with a **`SKILL.md`** folder from the [Agent Skills](https://github.com/agentskills/agentskills) format. Install [Skills for Real Engineers](https://github.com/mattpocock/skills) once, edit the test command, and run one loop (grill, spec, tickets, TDD, or review). Use [skills.sh](https://www.skills.sh/) or a plugin, not both. Enforce mechanical rules with [Cursor hooks](https://cursor.com/docs/hooks) or [Claude Code hooks](https://docs.anthropic.com/en/docs/claude-code/hooks). Adopt [Spec Kit](https://github.com/github/spec-kit), [BMAD](https://github.com/bmad-code-org/BMAD-METHOD), or [GSD](https://github.com/gsd-build/get-shit-done) only when a thin skill cannot hold the plan. Put the shared rules in [AGENTS.md](https://agents.md/), keep the test command true, check the UI in a browser when a human would, and leave a handoff. Next is **Structured Outputs and Tool Calling**, where the agent's JSON and tool arguments have to parse.
+
+## Structured Outputs and Tool Calling
+
+The last chapter's agent is done when a test passes. This chapter is done when a program can trust the object's fields. A JSON prompt from Prompting, Context, and System Instructions asks the model to behave. **Structured output** makes the shape part of the call. **Tool calling** is the other shape: the model names a function and arguments, and your code runs the function.
+
+Keep the smoke test. Change the assertion from "the text contains a label" to "this object validates, or the run fails." If the model returns a paragraph, the run fails. You do not scrape the paragraph.
+
+### JSON you can trust
+
+JSON you can trust has three properties: every required field is present, each field has the type you declared, and a value from a closed set is one of those values. Pretty-printed JSON that is missing `severity` is a failed call. So is `"severity": "kinda high"` when the schema says `low` or `high`.
+
+Define the schema in code you review, next to the fixture. A three-field object is enough for the first green run: a label enum, a short string, and an optional note. Grow the schema when a real record needs another column, not before.
+
+#### Native structured outputs from hosted APIs
+
+Use the provider's structured-output mode before you add a library. It constrains the reply to a JSON Schema. JSON mode only promises that the text parses as JSON. Structured output promises the schema.
+
+- **[OpenAI](https://developers.openai.com/api/docs/guides/structured-outputs).** Structured Outputs on the Responses API (`text_format` with a Pydantic model or a Zod object in the SDKs, or a `json_schema` response format). Strict mode requires you to mark properties required and set `additionalProperties` to false. The same guide separates this from function calling: structured text is the answer to the user; a function call is a request that your app do something. Refusals come back as a field you can branch on. A model that only has JSON mode is the older path. Stay on a model id whose docs list structured outputs, and record that id in the smoke test.
+- **[Anthropic](https://platform.claude.com/docs/en/build-with-claude/structured-outputs).** JSON outputs via `output_config.format`, and `messages.parse` in the Python SDK when you pass a Pydantic model. Strict tool use is the matching guarantee on tool arguments. You can use either feature, or both: the tool call is how Claude acts, the JSON output is what Claude says at the end.
+- **[Gemini](https://ai.google.dev/gemini-api/docs/structured-output).** A response schema, with Pydantic or Zod in the GenAI SDKs. Gemini's own split matches the others: structured output formats the final answer; [function calling](https://ai.google.dev/gemini-api/docs/generate-content/function-calling) is the action in the middle. Combining them is documented for Gemini 3 models. Confirm the model id you smoke-test is one of those if you need both in one request.
+
+Point the same fixture at the host you already pay for. Assert the parsed object. Then send a fixture that cannot fit the enum and assert that you record a refusal or a validation failure. A green test that accepts any string has not tested the schema.
+
+Local servers are behind on this. [Ollama](https://docs.ollama.com/api/openai-compatibility)'s compatible API has JSON mode and tools, and it does not implement every strict-schema flag. [llama.cpp](https://github.com/ggml-org/llama.cpp)'s server can constrain with a grammar. If the laptop model cannot hold the schema, keep the schema and run that fixture against the hosted model. Do not weaken the assertion so the local model looks green.
+
+#### [Instructor](https://github.com/567-labs/instructor) and Pydantic for validated objects
+
+**[Instructor](https://python.useinstructor.com/)** ([repo](https://github.com/567-labs/instructor)) wraps a provider client and returns a [Pydantic](https://docs.pydantic.dev/) model. You pass `response_model`. Instructor asks the provider for structure, validates, and on failure sends the validation error back and retries. Python, TypeScript, and other language ports exist. One call site can target OpenAI, Anthropic, Gemini, and an OpenAI-compatible local server.
+
+Use it when you want the retry loop written down once, and when the schema is a Pydantic class you already use for the rest of the app. The smoke test is the class: construct nothing by hand from a string. If `User(name=..., age=...)` would reject the payload, the call rejects it.
+
+Native structured outputs and Instructor overlap. Prefer the native mode on a host that already guarantees the schema, and keep Pydantic as the type you validate into. Add Instructor when you need the same model across two providers, or when a provider's JSON mode still needs a retry. Do not stack three parsers. One schema, one validation step, one place that logs the raw payload on failure.
+
+#### [Outlines](https://github.com/dottxt-ai/outlines) and [BAML](https://github.com/boundaryml/baml) for constrained generation
+
+**[Outlines](https://dottxt-ai.github.io/outlines/latest/)** constrains generation to a schema, a regex, or a grammar. On a runtime that exposes logits ([vLLM](https://github.com/vllm-project/vllm), [llama.cpp](https://github.com/ggml-org/llama.cpp), Transformers), invalid tokens are masked, so the decode cannot wander into prose. That is the point of running your own server. Outlines also speaks to hosted APIs; the token-level guarantee is the self-hosted path. Reach for it when you already serve a model and a retry loop is how you pay for bad JSON.
+
+**[BAML](https://docs.boundaryml.com/)** ([repo](https://github.com/boundaryml/baml)) moves the prompt and the types into `.baml` files. The compiler generates a client. You version the contract, you test it, and a tolerant parser accepts some of the messy JSON models actually emit (trailing commas, a missing close) without accepting a different schema. Reach for BAML when several services call the same extraction and you want the prompt in review next to the types, the way you review an API spec.
+
+Pick one constraint tool for the repo. Native structured outputs or Instructor cover a hosted extraction. Outlines covers a GPU box. BAML covers a contract you will generate clients from. A second library is a second place for the schema to drift.
+
+### Function calling and tools
+
+A **tool** is a function the model may ask your application to run. The model returns a name and arguments. Your process runs the function, or refuses it. You send the result back. The model continues. The model does not have your database password, and it does not execute the shell unless you wrote a tool that does.
+
+That loop is the same one a coding agent hides. Here you own it, so you can test it.
+
+#### [OpenAI](https://developers.openai.com/api/docs/guides/function-calling) tools, [Anthropic](https://platform.claude.com/docs/en/build-with-claude/structured-outputs) tool use, and [Gemini](https://ai.google.dev/gemini-api/docs/generate-content/function-calling) function calling
+
+Declare each tool with a name, a description that says when to use it, and a JSON Schema for the arguments. Turn on strict or structured arguments where the host offers them, so a missing required argument fails before your function runs.
+
+- **[OpenAI](https://developers.openai.com/api/docs/guides/function-calling).** Tools on the Responses API or Chat Completions. The flow is: send the tools, receive a call, run your code, send the tool output, receive the next message or another call. `strict: true` applies structured outputs to the arguments. Keep the tool list small. A later note in the same guide, tool search, exists for large catalogs. You do not need it for two functions.
+- **[Anthropic](https://platform.claude.com/docs/en/build-with-claude/structured-outputs).** Tool use, with strict tool use when you need the arguments to match the schema. The tool result goes back on the next user turn as a tool result block. Copy that shape from the docs. An OpenAI-shaped message list will not do.
+- **[Gemini](https://ai.google.dev/gemini-api/docs/generate-content/function-calling).** Function declarations. The model returns a call. Your code runs it. You return a function response. Gemini 3 returns an id on the call so parallel calls stay matched. The model still does not run the function.
+
+The smoke test for a tool is a stub. Register one function, `echo_label`, that returns the label it was given. Assert that the model called that name, that the arguments validate, and that your stub's return value appears in the following request. A test that only checks the final prose can pass while the tool never ran.
+
+Allowlist the names. If the model asks for a tool you did not register, fail the turn and log the name. Model Context Protocol (MCP), later in the book, is how you publish a set of tools to many clients. This chapter is one process and one list.
+
+#### [PydanticAI](https://github.com/pydantic/pydantic-ai) for typed Python agents
+
+**[PydanticAI](https://ai.pydantic.dev/)** is the agent runtime from the Pydantic team: a result type, tools as typed functions, and a loop that stops when the result validates. [Instructor](https://github.com/567-labs/instructor)'s own docs draw the line: Instructor for a single extraction, PydanticAI when the job is an agent with tools, retries, and a typed final answer.
+
+Use PydanticAI when you are writing the loop yourself in Python and you want the tool arguments and the final object to be the same kind of model. Skip it when the coding agent from the previous chapter already is the loop, or when one structured call fills the record. An agent framework around a single extraction hides the one request you should be able to log.
+
+The smoke test is unchanged: a fixture, a stub tool, a result object that validates, and a raw log of each tool call. If you cannot see the call in the log, the types are decorative.
+
+#### Retries, validation errors, and refusing to parse prose
+
+Cap retries. Two or three attempts is a policy. Each retry includes the validator's message ("`severity` must be `low` or `high`, got `urgent`"), not a new essay from you. Log the raw model text, the schema name, the model id, and the attempt number.
+
+Stop when the cap is hit. Mark the job failed. Leave the record empty. A human or a queue can look at the log. Filling the spreadsheet with a regex over the paragraph trains the team to trust a path you cannot test.
+
+Refuse these shortcuts:
+
+- A parser that finds the first `{` and the last `}` and hopes.
+- `try/except` that stores the whole reply in a `notes` column and continues.
+- A prompt line that says "really return JSON" after structured outputs are available on that host.
+
+JSON mode plus a retry is legitimate on a model with no schema mode. Say so in the test name, so nobody thinks the enum is guaranteed. When you move that call to structured outputs, delete the prose parser in the same commit.
+
+### When a spreadsheet or form is the real interface
+
+Many products do not need a chat box. The user lives in a sheet, a form, or a queue of tickets. The model is a function from messy text to a row. Ship that function. Add a chat when a person still has to ask a follow-up the row cannot hold.
+
+#### Extract, classify, and fill records from messy text
+
+One schema can do the three jobs, and the smoke test should separate them:
+
+- **Extract.** Pull the fields that are in the text: a name, a date, an amount. If the amount is absent, the field is null. Guessing an amount is a failed fixture. Put that fixture in the suite.
+- **Classify.** Pick one label from the enum. The description on the schema says what each label means. An input that fits two labels is a schema bug or a fixture that should land on the label you wrote down. Update the enum or the fixture. Do not let the model invent `other_other`.
+- **Fill.** Write the object into the row, the form, or the ticket fields your app already has. The write happens in your code after validation. The model never receives the production credentials. A dry-run mode prints the row and writes nothing, and the smoke test uses the dry run.
+
+Keep the source text beside the row in a place a reviewer can open, or store an id that points back to it. When the row is wrong, you need the text that produced it. That pair, source plus validated object, is also the start of the golden set in Evaluation, Tracing, and Guardrails.
+
+Run the suite when you change the schema, the prompt file, or the model id. One fixture for the happy path, one for a missing field, one for a label that must not be guessed. Three rows beat a demo transcript.
+
+### Summary: Structured Outputs and Tool Calling
+
+Trust a model when the reply validates against a schema you store next to the test. Use native structured outputs on [OpenAI](https://developers.openai.com/api/docs/guides/structured-outputs), [Anthropic](https://platform.claude.com/docs/en/build-with-claude/structured-outputs), and [Gemini](https://ai.google.dev/gemini-api/docs/structured-output) for the answer shape, and their tool or function-calling APIs when your code must act. [Instructor](https://github.com/567-labs/instructor) retries a Pydantic model across providers. [Outlines](https://github.com/dottxt-ai/outlines) constrains decoding on a server you run. [BAML](https://github.com/boundaryml/baml) turns the prompt and the types into a generated client. [PydanticAI](https://github.com/pydantic/pydantic-ai) is the typed loop when there is more than one tool call. Cap retries, log the raw payload, and leave the record empty when validation fails. If the real interface is a sheet or a form, extract, classify, and fill that row. Next is **Retrieval-Augmented Generation (RAG)**, where the text you extract from is a document you retrieved, not a paragraph pasted into the prompt.

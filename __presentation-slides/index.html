@@ -862,6 +862,109 @@
 * Hooks for mechanical rules; packs only when a thin skill cannot hold the plan <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
 * [AGENTS.md](https://agents.md/), a true test command, a browser check for UI, a handoff <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
 * Next loop: Structured Outputs and Tool Calling <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+## Structured Outputs and Tool Calling <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* The assertion is a validated object, or a failed run <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Structured output is the answer shape <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A tool call is a request your code may run <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A paragraph is not a fallback parser <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### JSON you can trust <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Required fields present, types match, enums stay inside the set <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Start with three fields and a fixture beside the schema <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Native structured outputs from hosted APIs <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* JSON mode parses; a schema mode matches your fields <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [OpenAI](https://developers.openai.com/api/docs/guides/structured-outputs): `text_format` or `json_schema`, plus a refusal you can branch on <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Anthropic](https://platform.claude.com/docs/en/build-with-claude/structured-outputs): JSON outputs and strict tool use <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Gemini](https://ai.google.dev/gemini-api/docs/structured-output): response schema; function calling is the action <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A local server that cannot hold the schema does not get a weaker test <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Instructor and Pydantic for validated objects <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [Instructor](https://github.com/567-labs/instructor) returns a Pydantic model and retries with the validation error <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* One schema across OpenAI, Anthropic, Gemini, or an OpenAI-compatible local server <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Native schema mode first; Instructor when the retry or the second provider is the point <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* One validation step, and a log of the raw payload on failure <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Outlines and BAML for constrained generation <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [Outlines](https://github.com/dottxt-ai/outlines): mask invalid tokens on vLLM, llama.cpp, or Transformers <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [BAML](https://github.com/boundaryml/baml): `.baml` contracts, a generated client, a tolerant parser <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* One constraint tool per repo so the schema cannot drift <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Function calling and tools <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* The model returns a name and arguments <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Your process runs the function, or refuses it, and sends the result back <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### OpenAI tools, Anthropic tool use, and Gemini function calling <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Name, when to use it, and a schema for the arguments <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [OpenAI](https://developers.openai.com/api/docs/guides/function-calling) tools, strict arguments <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Anthropic](https://platform.claude.com/docs/en/build-with-claude/structured-outputs) strict tool use; the result is a tool result block <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Gemini](https://ai.google.dev/gemini-api/docs/generate-content/function-calling) function declarations; your code still runs them <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Smoke test a stub: the name, the arguments, and the value you sent back <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### PydanticAI for typed Python agents <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [PydanticAI](https://github.com/pydantic/pydantic-ai): tools and a final result that both validate <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Instructor](https://github.com/567-labs/instructor) for one extraction; PydanticAI when the loop has tools <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Log every tool call; types you cannot see in the log are decorative <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Retries, validation errors, and refusing to parse prose <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Two or three retries, each one carrying the validator's message <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Then fail the job and leave the record empty <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* No first-brace parser, no dumping the paragraph into a notes column <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* JSON mode is allowed only when that model has no schema mode, and the test says so <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### When a spreadsheet or form is the real interface <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* The model is a function from messy text to a row <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Add a chat when a follow-up will not fit in the row <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Extract, classify, and fill records from messy text <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Extract only what is in the text; a missing amount stays null <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Classify into the enum you wrote, not a new label <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Your code writes the row after validation; the model never sees production credentials <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Three fixtures: happy path, missing field, a label that must not be guessed <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Summary: Structured Outputs and Tool Calling <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Native schemas on [OpenAI](https://developers.openai.com/api/docs/guides/structured-outputs), [Anthropic](https://platform.claude.com/docs/en/build-with-claude/structured-outputs), and [Gemini](https://ai.google.dev/gemini-api/docs/structured-output) <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Instructor](https://github.com/567-labs/instructor), [Outlines](https://github.com/dottxt-ai/outlines), or [BAML](https://github.com/boundaryml/baml) for the constraint you actually need <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Tools run in your process; [PydanticAI](https://github.com/pydantic/pydantic-ai) when that loop is the product <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Fail closed; fill a sheet when a sheet is the interface <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Next loop: Retrieval-Augmented Generation (RAG) <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
 					</textarea>
 				</section>
 			</div>
