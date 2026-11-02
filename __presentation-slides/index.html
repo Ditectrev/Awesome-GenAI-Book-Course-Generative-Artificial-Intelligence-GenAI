@@ -1108,6 +1108,158 @@
 * [Chroma](https://github.com/chroma-core/chroma) first; hybrid search, a reranker, and citations <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
 * [GraphRAG](https://github.com/microsoft/graphrag) when relationships are the question <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
 * Next loop: Agents and Multi-Step Workflows <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+## Agents and Multi-Step Workflows <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* A loop with tools, a trace, and a step cap <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Two tools you already trust: retrieval, and one stub <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The personality in the prompt is not the agent <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### An agent is a loop with tools, not a personality <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Reply, or a tool call your code runs <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Stop on a valid result, a step cap, a tool error, or a human <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Log the tool name, the arguments, the observation, and why you stopped <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Plan, act, observe, stop <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Plan: one next action you can store in the log <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Act: one tool call; your process holds the credentials <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Observe: the raw result, not a paraphrase <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Stop: a third step on a one-step fixture is a failure <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Human approval gates you should not skip <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Pause in the framework before send, pay, delete, or push <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* "Ask me first" in the prompt is not a gate <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Show the tool name, the arguments, and the trace so far <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Resume from a checkpoint; do not restart the chat <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Frameworks you can ship with <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* One framework for the week <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Same fixture, same two tools, same step cap, same trace <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### LangGraph for stateful graphs and checkpoints <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [LangGraph](https://github.com/langchain-ai/langgraph): nodes, edges, and a checkpointer <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Kill the process and resume; that is the feature you picked <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### OpenAI Agents SDK <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [OpenAI Agents SDK](https://github.com/openai/openai-agents-python): instructions, tools, handoffs, a runner <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The SDK runs in your process; the hosted Agents API is a different deployment <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A handoff is another place to log, not a reason to drop the step cap <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### CrewAI crews and flows <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [CrewAI](https://github.com/crewAIInc/crewAI): a crew of roles inside a flow that keeps the order <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* One agent and one flow until the trace shows a step worth isolating <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Microsoft Agent Framework after AutoGen <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [Microsoft Agent Framework](https://github.com/microsoft/agent-framework): new Python and .NET agent work <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [AutoGen](https://github.com/microsoft/autogen) stays for existing apps; new services move <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A chat between two agents is not the smoke test <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Hugging Face smolagents <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [smolagents](https://github.com/huggingface/smolagents): actions as Python, or as JSON tool calls <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Run the code in a sandbox, and show the code in the trace <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Mastra as a TypeScript agent framework <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [Mastra](https://github.com/mastra-ai/mastra): agents and workflows in a TypeScript app <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Suspend is the human gate; a test asserts the trace <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Browser, computer, and workflow agents <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* The observation is a page, a screenshot, or a node that ran <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* One origin, a step cap, and an assertion a human would trust <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Playwright-based browsing and Stagehand <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [Playwright](https://playwright.dev/) when you know the selectors <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Stagehand](https://github.com/browserbase/stagehand) when the selector is the fragile part <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Prefer the script when the script can do the task <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### n8n, Dify, Flowise, and Langflow when you want a canvas <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [n8n](https://github.com/n8n-io/n8n): the agent is one node in a business workflow <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Dify](https://github.com/langgenius/dify): an app builder an operator can edit <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Flowise](https://github.com/FlowiseAI/Flowise) and [Langflow](https://github.com/langflow-ai/langflow): drag the path, then run it <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The run's output is the test; a picture of the canvas is not <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Memory engineering <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Memory is what the next step is allowed to see <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Documents stay in the RAG index; this section is the policy beside it <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### What to store, what to forget, and what to retrieve <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Store a decision, a stable preference, or an expensive result, with a date <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Forget secrets, contradicted facts, and payloads you can fetch again <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Retrieve at the step that needs the fact; do not paste the store into every turn <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Working memory versus long-term memory <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Working memory is this run: plan, tool results, steps left <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Long-term memory is small, dated, and queried after the run ends <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A checkpoint resumes a run; it is not a knowledge base <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Mem0, Letta, and Graphiti as starting points <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* A dated table is enough until you are about to invent one badly <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Mem0](https://github.com/mem0ai/mem0): extract and search memories; review what it stored <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Letta](https://github.com/letta-ai/letta): the agent edits memory blocks inside a budget <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Graphiti](https://github.com/getzep/graphiti): facts that change over time, as a graph <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Two fixtures: recall a fact in a new session, and return the newer fact when one was superseded <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Summary: Agents and Multi-Step Workflows <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Trace plan, act, observe, stop; gate side effects <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* One of [LangGraph](https://github.com/langchain-ai/langgraph), the [OpenAI Agents SDK](https://github.com/openai/openai-agents-python), [CrewAI](https://github.com/crewAIInc/crewAI), [Agent Framework](https://github.com/microsoft/agent-framework), [smolagents](https://github.com/huggingface/smolagents), or [Mastra](https://github.com/mastra-ai/mastra) <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Playwright](https://playwright.dev/) or [Stagehand](https://github.com/browserbase/stagehand) on one origin; a canvas only if the run is the test <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Working memory in the run; long-term memory dated and retrieved <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Next loop: Model Context Protocol (MCP) <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
 					</textarea>
 				</section>
 			</div>
