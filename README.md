@@ -1350,3 +1350,145 @@ When the five questions retrieve the right pages twice in a row after a rebuild,
 ### Summary: Retrieval-Augmented Generation (RAG)
 
 RAG is ingest, chunk, embed, retrieve, and only then generate, tested by whether the right passage came back. Parse real files with [Unstructured](https://github.com/Unstructured-IO/unstructured) or [Docling](https://github.com/docling-project/docling), and real sites with [Firecrawl](https://github.com/mendableai/firecrawl) or [Crawl4AI](https://github.com/unclecode/crawl4ai). Build the loop in [LlamaIndex](https://github.com/run-llama/llama_index), [LangChain](https://github.com/langchain-ai/langchain), or [Haystack](https://github.com/deepset-ai/haystack), and store vectors in [Chroma](https://github.com/chroma-core/chroma) until you need [Qdrant](https://github.com/qdrant/qdrant), [Weaviate](https://github.com/weaviate/weaviate), or [Milvus](https://github.com/milvus-io/milvus). Add hybrid search, a reranker, and citations so a wrong paragraph is visible. Use [GraphRAG](https://github.com/microsoft/graphrag) when the question is about relationships the best paragraph cannot hold. Score retrieval before you edit the prompt. Next is **Agents and Multi-Step Workflows**, where retrieval is one tool in a loop that can plan, act, and stop.
+
+## Agents and Multi-Step Workflows
+
+A coding agent edits a repo. A RAG call answers from passages. This chapter is the loop you write when the product has to do more than one of those: search, call a tool, read the result, and either stop or take another step. The personality in the system prompt does not make it an agent. The loop does.
+
+Pick one framework for the week. Give it two tools you already trust: the retrieval function from the last chapter, and one stub that returns a fixed value. The smoke test is a trace of plan, action, observation, and stop, with a step cap that actually fires.
+
+### An agent is a loop with tools, not a personality
+
+An **agent** is your code around a model. Each turn, the model may reply with a final answer or with a tool call. You run the tool, or you refuse it, and you append the observation. Then you call the model again. Structured Outputs and Tool Calling already defined that contract for one call. Here the contract repeats until a stop condition.
+
+Write the stop conditions down before you admire a demo:
+
+- A validated result object, from the schema you already test.
+- A step cap, small enough that a stuck loop dies in front of you. Ten steps is plenty for the first fixture.
+- A tool error you do not understand. Stop and log it. Do not ask the model to "try something else" forever.
+- A human gate on any action that leaves the machine: send, pay, delete, push, or write to a system of record.
+
+If the trace does not show which tool ran and what it returned, you have a chat with extra latency. Log every step: the tool name, the arguments, the observation, and the reason you stopped.
+
+#### Plan, act, observe, stop
+
+Four words are the whole loop. Keep them visible in the trace.
+
+- **Plan.** One next action, not a essay. A graph node, a handoff, or a single sentence the log can store. If you cannot name the next tool, the agent is not ready to act.
+- **Act.** One tool call. Your process executes it. The model does not hold the credentials, and it does not get a second tool in the same breath until the first observation is back.
+- **Observe.** Store the tool result, not the model's paraphrase of it. The next turn sees the raw payload, trimmed if it is huge, with the source id when the tool was retrieval.
+- **Stop.** Hit a condition above and end the run. A final answer that skips the observation is a failed fixture, even if the prose sounds right.
+
+The first fixture is boring on purpose. Question in, retrieval tool returns a canned passage, answer must cite that passage, and a third step is a failure. When that trace is stable, add a second tool. The coding-agent week already taught you what happens when the loop can edit files. This loop should earn that power one tool at a time.
+
+#### Human approval gates you should not skip
+
+A **human approval gate** pauses the loop and waits for a person before a side effect. Put the gate in the framework's interrupt or suspend, not in a sentence in the prompt that says "ask me first." The prompt is a wish. The pause is a control, the same distinction as a hook versus a skill.
+
+Gate at least these:
+
+- Anything a customer will see sent.
+- Anything that moves money, deletes a row, or merges to the default branch.
+- The first time a new tool is allowed to run outside a stub.
+
+Show the person the tool name, the arguments, and the observation so far. Approve, edit the arguments, or stop. A checkpoint that can resume after the approval is the point of a stateful framework. A loop that restarts from zero after every "yes" will burn the window and the patience.
+
+While you are still on stubs, the gate can be a test that fails if the dangerous tool is called without an approval flag. Wire the real pause when the tool becomes real.
+
+### Frameworks you can ship with
+
+Six frameworks cover the shapes teams actually ship. Install one. The others are the map for the day a requirement shows up: resume tomorrow, a TypeScript app, a role-shaped crew, a code-writing agent, or a Microsoft stack that used to be AutoGen.
+
+The smoke test does not change with the logo. Same fixture, same two tools, same step cap, same trace.
+
+#### [LangGraph](https://github.com/langchain-ai/langgraph) for stateful graphs and checkpoints
+
+**[LangGraph](https://github.com/langchain-ai/langgraph)** is a graph. Nodes are steps, edges are decisions, and a checkpointer stores the state so a run can pause and resume. Use it when the workflow must survive a restart, a human approval, or a retry of one node without replaying the whole chat. LangChain can sit underneath for model calls and retrievers. You do not have to adopt every LangChain abstraction to use the graph.
+
+Draw the graph on paper first: retrieve, answer, or ask a human. Then implement those nodes. A checkpoint you cannot reload is only a log. After the smoke test passes, kill the process on purpose and resume from the checkpoint. That is the feature you picked LangGraph for.
+
+#### [OpenAI Agents SDK](https://github.com/openai/openai-agents-python)
+
+The **[OpenAI Agents SDK](https://github.com/openai/openai-agents-python)** ([guide](https://developers.openai.com/api/docs/guides/agents)) is a library that runs in your process: an agent with instructions and tools, handoffs to other agents, and a runner that loops until the agent stops. There is a TypeScript SDK as well. Tracing is part of the run, which is what you want when the smoke test is a trace.
+
+OpenAI also offers a hosted Agents API, where they run the harness. That is a different deployment. This section is the SDK, because you can see the tool execute in your code and you can point the same patterns at another model later. Use the SDK when you want the smallest agent loop that still has handoffs and a session, and you are already on the OpenAI client from the first chapters. Keep the tools you register on an allowlist. A handoff to a second agent is a second place to log, not a reason to skip the step cap.
+
+#### [CrewAI](https://github.com/crewAIInc/crewAI) crews and flows
+
+**[CrewAI](https://github.com/crewAIInc/crewAI)** ([docs](https://docs.crewai.com/)) splits the work into **crews** and **flows**. A crew is a set of role-shaped agents that share a task. A flow is the event-driven path around them: branches, state, and the places you refuse to leave to a role-play. Use a crew when the work really is two jobs with two instructions, such as "retrieve" and "check the citations." Use a flow when the order must hold even if an agent is enthusiastic.
+
+A crew with five personalities and one tool is a prompt you split for theater. Start with one agent and one flow. Add a second role when the trace shows a step you want isolated, and give that role its own done check. If you cannot tell which role wrote a bad line, you added roles too early.
+
+#### [Microsoft Agent Framework](https://github.com/microsoft/agent-framework) after AutoGen
+
+**[Microsoft Agent Framework](https://learn.microsoft.com/en-us/agent-framework/)** ([repo](https://github.com/microsoft/agent-framework)) is the framework Microsoft wants for new agent work, in Python and .NET. It carries the multi-agent patterns people used **[AutoGen](https://github.com/microsoft/autogen)** for, plus workflow graphs, checkpoints, and human-in-the-loop steps. AutoGen remains for existing apps. Its own direction is maintenance, not a stream of new features. A new service goes to Agent Framework, with the migration notes Microsoft publishes, rather than a fresh AutoGen project you will have to move.
+
+Pick it when the team is already on Azure or .NET, or when you are leaving AutoGen and want the supported successor. The smoke test is still your two tools and a checkpoint you can resume. A sample that only chats between two agents has not proved the framework.
+
+#### [Hugging Face smolagents](https://github.com/huggingface/smolagents)
+
+**[smolagents](https://github.com/huggingface/smolagents)** is a small library whose distinctive agent writes actions as Python code, then runs that code, instead of only emitting a JSON tool call. A tool-calling agent is also in the box if you want the JSON shape you already tested. Use smolagents when the next step is easier as a few lines of code than as another tool schema, and when you can run that code in a sandbox. A code agent on your laptop with your credentials is a shell with a model in front of it.
+
+Point it at the model you already smoke-test, including a local OpenAI-compatible server. Assert that the code it ran is in the trace, and that the sandbox, not your home directory, was the working directory. If you cannot show the code, you cannot review it.
+
+#### [Mastra](https://github.com/mastra-ai/mastra) as a TypeScript agent framework
+
+**[Mastra](https://mastra.ai/)** ([repo](https://github.com/mastra-ai/mastra)) is the TypeScript framework in this list: agents, tools, workflows with suspend and resume, and a place for memory and evals next to a Node or React app. Use it when the product is already TypeScript and you do not want a Python service beside it just to hold the loop. Workflows can branch and run steps in parallel. Suspend is the human gate.
+
+The smoke test is a TypeScript test that runs the workflow on the canned retrieval tool and asserts the trace. If the only way to see success is a chat window in the dev server, you have not automated the loop yet.
+
+### Browser, computer, and workflow agents
+
+Some tools are not functions in your repo. They are a browser, a desktop, or a canvas another person will edit. They are still the same loop. The observation is a page, a screenshot, or a node that ran. The step cap still applies. A browser agent that may click anything on the internet is not a first fixture.
+
+#### [Playwright](https://playwright.dev/)-based browsing and [Stagehand](https://github.com/browserbase/stagehand)
+
+**[Playwright](https://playwright.dev/)** drives a real browser: open a URL, click, type, and read the page. Use it when you know the selectors and the flow is stable. The assertion is the same one from Coding Agents and Skills: the page shows the change, or the accessibility snapshot contains the text you expected.
+
+**[Stagehand](https://github.com/browserbase/stagehand)** sits on that browser and lets a model act and extract when the selector is the fragile part. Use it when the page changes often enough that a hard-coded click breaks every week, and you can still check the result without the model. Give it one origin. Log the actions. A step cap of a handful of actions beats a model that "explores." If a Playwright script can do the task, prefer the script. The model is for the step you cannot name in advance.
+
+#### [n8n](https://github.com/n8n-io/n8n), [Dify](https://github.com/langgenius/dify), [Flowise](https://github.com/FlowiseAI/Flowise), and [Langflow](https://github.com/langflow-ai/langflow) when you want a canvas
+
+A canvas is a way to see the loop. It is not a different loop.
+
+- **[n8n](https://github.com/n8n-io/n8n)** is a workflow product: triggers, branches, and HTTP or app nodes, with a model node where you need one. Use it when the agent is one step in a business process that already has triggers and credentials in n8n.
+- **[Dify](https://github.com/langgenius/dify)** is an app builder for model workflows, retrieval, and agents, with a UI your team can edit. Use it when the operator is not going to live in a Python file.
+- **[Flowise](https://github.com/FlowiseAI/Flowise)** and **[Langflow](https://github.com/langflow-ai/langflow)** are open canvases aimed at LangChain-style graphs. Use one when you want to drag the retrieve-then-generate path and still export something you can run.
+
+Pick a canvas when two people must see the path. Keep the five-question retrieval fixture, or the two-tool agent fixture, as a run you can repeat after someone moves a node. A screenshot of the canvas is not the test. The run's output is the test. Secrets stay in the product's credential store, not in a node you commit.
+
+### Memory engineering
+
+Memory is what the next turn, or the next session, is allowed to see. It is not a transcript you hope the model will skim. The prompting chapter already said a summary is a cache with an expiry. RAG already said documents live in an index. This section is the policy between them: what the agent stores about the work, what it drops, and what it fetches when a new session starts.
+
+#### What to store, what to forget, and what to retrieve
+
+**Store** decisions, stable preferences, and the outcome of an expensive tool call you will reuse: "the customer id is 14," "we chose Qdrant," "the last successful query returned these three chunk ids." Write them as short records with a date and a source.
+
+**Forget** secrets, raw tickets you are not allowed to retain, and any fact a newer observation contradicted. Delete the old record. Do not leave both "the API is v1" and "the API is v2" for the model to average. Forget the full tool payload when you have stored the id and can retrieve the payload again.
+
+**Retrieve** at the start of a step that needs the fact, the way you retrieve a passage. A memory note dumped into every turn spends the window and goes stale in public. The handoff file from Coding Agents and Skills is a memory record a human can read. An automatic store should be at least that legible.
+
+If a memory and a retrieved document disagree, prefer the document for facts about the world and the newer dated memory for facts about this user's choices. Say which one you used in the trace.
+
+#### Working memory versus long-term memory
+
+**Working memory** is this run: the plan, the tool results, the draft answer, the steps remaining. It lives in the graph state or the session. It can be large, and it dies or gets checkpointed with the run. Trim it when the window fills, the way you trim chat history, and do not trim the system rules or the latest observation.
+
+**Long-term memory** is what you keep after the run ends. It is small. It is dated. It is queried, not pasted. A checkpoint is working memory you can resume. It is not long-term memory, and you should not search old checkpoints as if they were a knowledge base. That job is the RAG index.
+
+The bug to avoid is writing every utterance into long-term memory. The store fills with chatter, retrieval returns chatter, and the agent cites a joke from last Tuesday as policy. Write on purpose, at the end of a run, from a schema: a handful of fields, validated like any other structured output.
+
+#### [Mem0](https://github.com/mem0ai/mem0), [Letta](https://github.com/letta-ai/letta), and [Graphiti](https://github.com/getzep/graphiti) as starting points
+
+You can ship the policy with a table and a date column. Reach for a library when you are about to invent that table badly.
+
+- **[Mem0](https://github.com/mem0ai/mem0)** stores and searches memories across a user or a session, and it will extract memories from a conversation. Use it when you want that extraction without designing the schema on day one. Still review what it wrote. An extractor will store a secret if the secret was in the chat and you did not forbid the field.
+- **[Letta](https://github.com/letta-ai/letta)** is an agent runtime whose point is memory: the agent edits its own memory blocks inside a context budget. Use it when the experiment is "what should stay in context," not when you already have a graph you like. Read the blocks after a run. If they grew without a decision, tighten the instructions or the tool that writes them.
+- **[Graphiti](https://github.com/getzep/graphiti)** builds a temporal knowledge graph of entities and facts that change over time. Use it when long-term memory is relationships with history ("this id used to map to that team"), which a flat list of notes will scramble. It is closer to GraphRAG than to a sticky note. Run it on facts you already store, and ask a question your flat memory got wrong because time mattered.
+
+One store. A fixture that writes a fact, starts a new session, and retrieves that fact. A second fixture whose fact was superseded, which must return the new fact. If both pass, the memory loop is real.
+
+### Summary: Agents and Multi-Step Workflows
+
+An agent is a loop you can trace: plan, act, observe, stop, with a step cap and a human gate before any side effect. Ship that loop in one framework. [LangGraph](https://github.com/langchain-ai/langgraph) when you need checkpoints, the [OpenAI Agents SDK](https://github.com/openai/openai-agents-python) when you want a small runner and handoffs, [CrewAI](https://github.com/crewAIInc/crewAI) when a flow should wrap a crew, [Microsoft Agent Framework](https://github.com/microsoft/agent-framework) for new work that would have been AutoGen, [smolagents](https://github.com/huggingface/smolagents) when the action is code in a sandbox, and [Mastra](https://github.com/mastra-ai/mastra) when the app is TypeScript. Drive a browser with [Playwright](https://playwright.dev/) or [Stagehand](https://github.com/browserbase/stagehand) on one origin. Use [n8n](https://github.com/n8n-io/n8n), [Dify](https://github.com/langgenius/dify), [Flowise](https://github.com/FlowiseAI/Flowise), or [Langflow](https://github.com/langflow-ai/langflow) when the team needs a canvas, and test the run rather than the picture. Store decisions on purpose, keep working memory in the run, and start long-term memory with [Mem0](https://github.com/mem0ai/mem0), [Letta](https://github.com/letta-ai/letta), or [Graphiti](https://github.com/getzep/graphiti) only after a dated record would have done. Next is **Model Context Protocol (MCP)**, where those tools are a standard other clients can call, not a list hard-coded in one loop.
