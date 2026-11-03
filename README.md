@@ -1584,3 +1584,137 @@ The blast radius is the union of every tool you enabled, running as the user the
 ### Summary: Model Context Protocol (MCP)
 
 MCP is how a tool, a resource, or a prompt becomes a catalog any client can call. Read the [specification](https://modelcontextprotocol.io/) at revision 2026-07-28, run one [reference server](https://github.com/modelcontextprotocol/servers) inside [Claude Code](https://docs.anthropic.com/en/docs/claude-code/mcp), [Cursor](https://cursor.com/docs/mcp), or [Copilot](https://docs.github.com/en/copilot), and confirm the client shows the call. Build your own server with the [Python SDK](https://github.com/modelcontextprotocol/python-sdk) or the [TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk) on the v2 line, and wrap one read-only function you already test. Allowlist the tool and the data, treat stdio as your user, and do not put a remote server on the network without authorization. A write tool waits for the same human gate as any other side effect. Next is **Harness engineering**, where the loop around the model — tools, sandbox, permissions, and retries — is the thing you design, whether or not you use MCP to plug the tools in.
+
+## Harness engineering
+
+The last chapters gave you a loop, tools, and a protocol. A **harness** is the software around that loop: which tools exist, where they run, what they may touch, what happens when the window fills, and how a run is allowed to stop or retry. The model is the part you rent. The harness is the part you are responsible for when something goes wrong.
+
+You already use a harness if you use Cursor, Claude Code, or Codex. This chapter names the pieces those products run, tells you when to stay inside them, and points at the open projects you clone on the day a product cannot enforce the rule you need. The smoke test is still a trace plus a pass/fail, not a diagram of the architecture.
+
+### What a harness is
+
+A harness has a job: take a task, call a model, let the model act through tools, and return an outcome you can score. Everything else is a feature of that job. If you cannot say what "done" is, you are not engineering a harness. You are collecting settings.
+
+#### The loop around the model: tools, sandbox, permissions, context compaction, and retries
+
+Five controls sit around every serious agent. Write down, for the agent you used last week, which of them you configured and which the product decided for you.
+
+- **Tools.** The allowlist from Model Context Protocol (MCP) and from function calling. A tool that is not on the list cannot run, even if the model asks.
+- **Sandbox.** The place the tool runs. A sandbox that can see your home directory and the network is a sandbox in name only. The working directory, the filesystem, and the network are the boundary.
+- **Permissions.** What the sandbox may do inside that boundary: read, write, execute a named command, spend money, send mail. A permission check that lives only in the prompt will be talked out of. Put it in code, a hook, or the product's approval UI.
+- **Context compaction.** What you drop when the window fills. Tool outputs, old turns, and retrieved passages are the usual bulk. The system rules and the latest observation stay. A compaction step you did not design will drop the rule and keep the chatter.
+- **Retries.** What happens when a tool errors, the model refuses, or a test fails. A retry includes the error. A cap ends the run. A permission denial is not a retry.
+
+The agent chapter's plan, act, observe, stop is the shape of one run. The harness is what makes the next run obey the same five controls without you remembering them.
+
+#### Runtime harness versus eval harness
+
+A **runtime harness** is what serves a user or a developer today. It has credentials, a sandbox, logs, and a way to stop. Cursor, Claude Code, and Codex are runtime harnesses. So is the loop you ship in LangGraph or Mastra once it has those controls.
+
+An **eval harness** is what scores that runtime. It freezes the task, runs the agent, and checks an outcome: tests passed, a schema validated, a citation matched a chunk. It should not share write access to production. It should be boring to rerun.
+
+Keep them separate. A runtime that "evals itself" by asking the model if it did a good job is a second prompt. An eval that can push to your default branch is a runtime with a scoreboard. The smoke test for this chapter is one runtime run you can trace, and one eval run that fails when the patch or the prompt is wrong.
+
+### Use [Cursor](https://cursor.com/), [Claude Code](https://github.com/anthropics/claude-code), or [Codex](https://github.com/openai/codex) before you build one
+
+Building a harness is how teams spend a month reimplementing the editor they already pay for. Stay on the product you picked in Coding Agents and Skills until you can name the control it will not give you.
+
+#### What those products already run for you
+
+Each of these already is a runtime harness. Read its settings as a checklist, not as a tutorial you must replace.
+
+- **[Cursor](https://cursor.com/).** The agent loop, project rules, skills, [hooks](https://cursor.com/docs/hooks), [MCP](https://cursor.com/docs/mcp), and an approval step before commands and edits you have not allowed. The sandbox and the permission prompts are the product. Your job is the allowlist, the rules file, and the test the agent must run.
+- **[Claude Code](https://github.com/anthropics/claude-code).** A terminal loop with tools, `CLAUDE.md`, permissions, hooks, MCP, and compaction when the conversation gets long. Subagents and skills are still inside that loop. If you cannot see a tool call, you have not turned the harness to a log you read.
+- **[Codex](https://github.com/openai/codex).** OpenAI's coding-agent harness, CLI and IDE, with `AGENTS.md`, sandbox modes, and approvals. The hosted Agents API from the agents chapter is the same idea run for you. The CLI is the harness you can point at a repo on a machine you control.
+
+For one week, do not wrap them. Give the product one task whose done check is a test or a page. Record which permission it asked for, which tool it called, and whether a long run compacted the context or just got worse. That note is the spec if you later build.
+
+#### When a product harness is no longer enough
+
+Leave the product when a requirement is outside it, not when a blog post says harnesses are the new framework.
+
+- The agent must run where the product cannot: a service, a queue, a customer tenant, with your audit log.
+- The sandbox must be stronger or stranger than the product's: no network, a clean machine per task, a secret the developer laptop must not hold.
+- The tool is yours and must be the same in every client. That is an MCP server, which you already know how to write. It is not a new loop.
+- You must score a hundred tasks the same way, overnight, without clicking approve. That is an eval harness, and it can still call the product in a headless mode.
+- A policy the product will not enforce: a command that must always be denied, a directory that must never be mounted, a spend cap per run.
+
+If the gap is "I want a different prompt," edit `AGENTS.md`, `CLAUDE.md`, or a skill. If the gap is "I want a different model," change the model id. Build when the gap is a control.
+
+### Build or extend the runtime loop
+
+When you build, extend one control. Do not start from an empty chat completion and rediscover tools. Take the loop you already trust — a framework from the agents chapter, or a thin script around the API — and add the missing piece. The trace from the smoke test should show the new control firing.
+
+#### Tools, MCP, and allowlists
+
+Tools enter the harness through a registry you own. In-process functions are fine for one service. [MCP](https://modelcontextprotocol.io/) is how the same tool shows up in Cursor, Claude Code, and Codex without a second implementation. The harness allowlist is the last gate: the server may offer twenty tools, and this run may enable two.
+
+Name the tools in the run config you commit. A default of "all tools the server has today" will grow the blast radius the next time someone publishes a tool. Read-only tools first. A write tool stays behind the approval gate.
+
+#### Sandbox and permissions so a tool cannot wipe the repo
+
+The sandbox is the answer to a tool that can run a shell. Give it a workspace copy or a writable directory that is not your real repo until the patch is reviewed. Deny network except hosts you listed. Deny a home directory, an SSH agent, and a cloud credential file. Mount the repo read-only when the task is "explain this," and writable only when the task is "patch this."
+
+Permissions sit inside the sandbox. A command allowlist, a path allowlist, and a hook that rejects `rm -rf` and a push to the default branch are the same controls as in the coding-agent chapter, now treated as harness config. Test them. A fixture that asks the agent to delete the workspace must fail closed, with the denial in the trace.
+
+If you cannot build that isolation yourself this week, use a sandbox product. [E2B](https://e2b.dev/), later in this chapter, is the one to clone a pattern from. The product harnesses already sandbox. Do not "improve" them by turning the sandbox off so the agent can "just work."
+
+#### Context compaction when the window fills
+
+Compaction is a deliberate summary, not a silent trim from the front of the list. When the token count crosses a threshold you set, replace old tool outputs with a short record: what was called, what id came back, what failed. Keep the system or developer rules. Keep the latest observation in full. Keep the task statement.
+
+Date the summary, the way you date a memory note. A compaction that says "the tests passed" without the command will poison the next step. Log the before and after token counts. If quality drops the turn after compaction, the summary dropped a fact. Fix the summary. Do not raise the window and hope.
+
+Cursor, Claude Code, and Codex compact for you. If their summary is wrong, the fix is often a shorter tool result or a handoff file, not a custom compactor. Write your own when the product's summary cannot keep the fields your eval checks.
+
+#### Retries, stop conditions, and human approval
+
+Stop conditions are harness policy. Put them in config:
+
+- A step cap.
+- A token or money cap for the run.
+- A validated final object, or a test command that exits zero.
+- Two identical tool errors in a row.
+- Any permission denial.
+
+Retry a flake: a timeout, a 429, a test that the tool output says is environmental. Pass the error text into the next observation so the model is not guessing. Do not retry a refusal, a schema failure you already capped in Structured Outputs, or a human's "no."
+
+Human approval is a stop that can resume. The harness stores the pending tool call and waits. It does not ask the model to decide that the human would have approved. The agents chapter's gate is this control. The harness is where the wait is enforced for every run, not only the demo.
+
+### Open harnesses you can actually clone
+
+When the product is not enough, clone a harness that already has a sandbox and a trace. Read one run before you fork the prompts.
+
+#### [Codex CLI](https://github.com/openai/codex), [OpenHands](https://github.com/OpenHands/OpenHands), and [SWE-agent](https://github.com/SWE-agent/SWE-agent)
+
+- **[Codex CLI](https://github.com/openai/codex).** The open coding harness from OpenAI. Use it when you want the same agent you can run headlessly against a repo, with sandbox and approval modes you can set in config, and when your model account is already OpenAI. Point it at a branch you can delete. The done check is the project's test command.
+- **[OpenHands](https://github.com/OpenHands/OpenHands).** An open software-agent harness with a sandbox per task and a software-agent SDK teams embed. Use it when you need an agent service you can host, not an editor plugin, and when you are willing to run its runtime rather than a pile of shell scripts. Their benchmark setup is a separate eval path. Do not confuse a leaderboard run with the product you would give a developer.
+- **[SWE-agent](https://github.com/SWE-agent/SWE-agent).** A harness built to turn a GitHub issue into a patch and a test result. Use it when the task shape is "issue in, patch out," and you want to see a small agent loop aimed at a repository rather than a general assistant. Read the trajectory. A patch that passes tests and rewrites unrelated files still fails your review, which is why the eval and the runtime stay different.
+
+Clone one. Run it on a bug you already know how to fix. If it cannot see the test command, fix the config. If it can wipe the checkout, fix the sandbox before the second run.
+
+#### [E2B](https://github.com/e2b-dev/E2B) for isolated sandboxes
+
+**[E2B](https://e2b.dev/)** ([repo](https://github.com/e2b-dev/E2B)) starts an isolated cloud sandbox: a filesystem, a shell, and a place for an agent such as Codex to work without your laptop's credentials. Use it when the missing control is isolation, not a new planner. Create the sandbox, run the task, pull the diff or the test log, and destroy the sandbox.
+
+The smoke test is a sandbox that cannot read a secret you did not inject, and a diff you can apply on a branch. A long-lived sandbox you reuse for every customer is a shared computer. One task, one sandbox, then throw it away.
+
+### Eval harnesses that score the loop
+
+An eval harness answers a narrower question: given this task and this agent, did the outcome meet the check? It pins the harness version, the model id, and the task list. A score without those three is a demo.
+
+#### [SWE-bench](https://github.com/SWE-bench/SWE-bench) and [Inspect](https://github.com/UKGovernmentBEIS/inspect_ai)
+
+**[SWE-bench](https://www.swebench.com/)** ([repo](https://github.com/SWE-bench/SWE-bench)) is a set of real repository issues scored by whether the project's tests pass after the agent's patch. Use it to compare harnesses on issue-solving, not to decide if your prompt "feels" better. A number from a public split is not your codebase. Take the pattern: a task, a pinned repo state, a hidden or held-out test, a patch, a pass or fail. Build a tiny version with five bugs from your own history before you rent a leaderboard.
+
+**[Inspect](https://inspect.aisi.org.uk/)** ([repo](https://github.com/UKGovernmentBEIS/inspect_ai)) is an eval framework: datasets, solvers (the agent), sandboxes, and scorers. Use it when you need to run the same tasks across models or harnesses and keep the logs. The [Inspect tutorial](https://inspect.aisi.org.uk/tutorial) installs the Inspect SWE package (`inspect-swe`) so a coding agent such as Codex CLI runs inside the sandbox and the score stays in Inspect. Start with one task and one scorer you could explain to a teammate. A scorer that asks a second model "was this good?" is a second opinion. Prefer a test, a schema check, or an exact match when you have one.
+
+#### [promptfoo](https://github.com/promptfoo/promptfoo) when the job is prompts, not a repo patch
+
+**[promptfoo](https://www.promptfoo.dev/)** is the eval harness for prompts, RAG answers, and red-team cases. A config lists the prompts, the models, and the assertions. The run fails when an assertion fails. Use it when the thing you change is a prompt file or a schema, and there is no repository patch to compile. The five retrieval questions from the RAG chapter, and the schema fixtures from Structured Outputs, fit here as assertions.
+
+Do not use promptfoo to pretend a coding agent succeeded. A coding run is scored by the repo's tests, which is the SWE-bench shape. Evaluation, Tracing, and Guardrails goes further on golden sets, red teams, and traces. Here, the rule is only: pick the harness that matches the artifact. Prompt in, text out: promptfoo. Issue in, patch out: a repo eval. The runtime harness stays the thing under test, not the scorer.
+
+### Summary: Harness engineering
+
+A harness is the loop around the model: tools, a sandbox, permissions, compaction, and retries, with a stop you can defend. Use [Cursor](https://cursor.com/), [Claude Code](https://github.com/anthropics/claude-code), or [Codex](https://github.com/openai/codex) until you can name the control they will not give you. Then add that control, or clone [Codex CLI](https://github.com/openai/codex), [OpenHands](https://github.com/OpenHands/OpenHands), or [SWE-agent](https://github.com/SWE-agent/SWE-agent), and isolate the work in [E2B](https://github.com/e2b-dev/E2B) when the laptop is the wrong computer. Score a repo patch with the [SWE-bench](https://github.com/SWE-bench/SWE-bench) pattern or [Inspect](https://github.com/UKGovernmentBEIS/inspect_ai), and score a prompt with [promptfoo](https://github.com/promptfoo/promptfoo). Keep the runtime that acts separate from the eval that grades it. Next is **Evaluation, Tracing, and Guardrails**, where those scores, the traces, and the safety checks become a suite you run like tests.

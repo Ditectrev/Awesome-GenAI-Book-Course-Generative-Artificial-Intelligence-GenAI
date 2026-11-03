@@ -1355,6 +1355,159 @@
 * Your server is one read-only function, on the [Python](https://github.com/modelcontextprotocol/python-sdk) or [TypeScript](https://github.com/modelcontextprotocol/typescript-sdk) v2 SDK <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
 * Allowlist the tool and the data; stdio is you; HTTP needs an identity <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
 * Next loop: Harness engineering <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+## Harness engineering <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* The software around the model, not the model you rent <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A trace plus a pass/fail, not an architecture diagram <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### What a harness is <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Take a task, call a model, act through tools, return an outcome you can score <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* If you cannot say what done is, you are collecting settings <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### The loop around the model: tools, sandbox, permissions, context compaction, and retries <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Tools: an allowlist; a tool off the list cannot run <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Sandbox: workspace, filesystem, and network are the boundary <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Permissions live in code, a hook, or the product's approval UI <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Compaction drops bulk on purpose and keeps the rules plus the latest observation <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A retry includes the error; a cap ends the run; a denial is not a retry <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Runtime harness versus eval harness <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Runtime: credentials, sandbox, logs, a way to stop, a user today <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Eval: a frozen task, a check, no production write access <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* "The model says it did well" is a second prompt, not a score <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Use Cursor, Claude Code, or Codex before you build one <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Stay until you can name the control the product will not give you <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### What those products already run for you <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [Cursor](https://cursor.com/): rules, skills, hooks, MCP, and an approval step <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Claude Code](https://github.com/anthropics/claude-code): permissions, hooks, MCP, compaction <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Codex](https://github.com/openai/codex): sandbox modes and approvals on a repo you control <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* One task, one test, a note of which permission it asked for <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### When a product harness is no longer enough <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* A service, a tenant, and an audit log the product cannot host <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A sandbox that must not hold the laptop's credentials <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The same tool in every client is an MCP server, not a new loop <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A hundred tasks overnight is an eval harness, which can still call the product <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Build or extend the runtime loop <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Add the missing control to a loop you already trust <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The trace shows the new control firing <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Tools, MCP, and allowlists <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* The server may offer twenty tools; this run enables two <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Name them in config you commit <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Read-only first; a write waits for approval <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Sandbox and permissions so a tool cannot wipe the repo <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* A workspace copy, not your real repo, until the patch is reviewed <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Network and credentials are deny-by-default <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A fixture that asks for a delete must fail closed, in the trace <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Context compaction when the window fills <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Replace old tool output with what was called, what id came back, what failed <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Keep the rules, the task, and the latest observation <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Log tokens before and after; a worse next turn means the summary dropped a fact <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Retries, stop conditions, and human approval <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Stop on a step cap, a spend cap, a passing test, two identical errors, or a denial <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Retry a timeout with the error in the next observation <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Approval stores the pending call and waits; the model does not grant it <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Open harnesses you can actually clone <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Clone a harness that already has a sandbox and a trace <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Read one run before you fork the prompts <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Codex CLI, OpenHands, and SWE-agent <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [Codex CLI](https://github.com/openai/codex): headless, with sandbox and approval modes <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [OpenHands](https://github.com/OpenHands/OpenHands): an agent service you can host, one sandbox per task <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [SWE-agent](https://github.com/SWE-agent/SWE-agent): issue in, patch out, tests as the check <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A patch that passes and rewrites unrelated files still fails review <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### E2B for isolated sandboxes <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [E2B](https://github.com/e2b-dev/E2B): a clean machine per task, then destroy it <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The missing control is isolation, not a new planner <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Pull the diff and the test log; a reused sandbox is a shared computer <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Eval harnesses that score the loop <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Pin the harness version, the model id, and the task list <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A score without those three is a demo <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### SWE-bench and Inspect <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [SWE-bench](https://github.com/SWE-bench/SWE-bench): a pinned repo, a patch, tests pass or they do not <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Five bugs from your own history before a public leaderboard <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Inspect](https://github.com/UKGovernmentBEIS/inspect_ai): tasks, a solver, a sandbox, a scorer <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Prefer a test or a schema check over a second model's opinion <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### promptfoo when the job is prompts, not a repo patch <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [promptfoo](https://github.com/promptfoo/promptfoo): prompts, models, assertions, a failed run <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Schema fixtures and the five retrieval questions fit here <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A coding agent is scored by the repo's tests, not by a prompt grade <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Summary: Harness engineering <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Tools, sandbox, permissions, compaction, retries, and a stop you can defend <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Cursor](https://cursor.com/), [Claude Code](https://github.com/anthropics/claude-code), or [Codex](https://github.com/openai/codex) until a control is actually missing <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Then [OpenHands](https://github.com/OpenHands/OpenHands), [SWE-agent](https://github.com/SWE-agent/SWE-agent), or [E2B](https://github.com/e2b-dev/E2B) <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [SWE-bench](https://github.com/SWE-bench/SWE-bench) or [Inspect](https://github.com/UKGovernmentBEIS/inspect_ai) for patches; [promptfoo](https://github.com/promptfoo/promptfoo) for prompts <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Next loop: Evaluation, Tracing, and Guardrails <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
 					</textarea>
 				</section>
 			</div>
