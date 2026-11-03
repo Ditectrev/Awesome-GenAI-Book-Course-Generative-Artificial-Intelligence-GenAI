@@ -1492,3 +1492,95 @@ One store. A fixture that writes a fact, starts a new session, and retrieves tha
 ### Summary: Agents and Multi-Step Workflows
 
 An agent is a loop you can trace: plan, act, observe, stop, with a step cap and a human gate before any side effect. Ship that loop in one framework. [LangGraph](https://github.com/langchain-ai/langgraph) when you need checkpoints, the [OpenAI Agents SDK](https://github.com/openai/openai-agents-python) when you want a small runner and handoffs, [CrewAI](https://github.com/crewAIInc/crewAI) when a flow should wrap a crew, [Microsoft Agent Framework](https://github.com/microsoft/agent-framework) for new work that would have been AutoGen, [smolagents](https://github.com/huggingface/smolagents) when the action is code in a sandbox, and [Mastra](https://github.com/mastra-ai/mastra) when the app is TypeScript. Drive a browser with [Playwright](https://playwright.dev/) or [Stagehand](https://github.com/browserbase/stagehand) on one origin. Use [n8n](https://github.com/n8n-io/n8n), [Dify](https://github.com/langgenius/dify), [Flowise](https://github.com/FlowiseAI/Flowise), or [Langflow](https://github.com/langflow-ai/langflow) when the team needs a canvas, and test the run rather than the picture. Store decisions on purpose, keep working memory in the run, and start long-term memory with [Mem0](https://github.com/mem0ai/mem0), [Letta](https://github.com/letta-ai/letta), or [Graphiti](https://github.com/getzep/graphiti) only after a dated record would have done. Next is **Model Context Protocol (MCP)**, where those tools are a standard other clients can call, not a list hard-coded in one loop.
+
+## Model Context Protocol (MCP)
+
+The agent loop in the last chapter calls tools you registered in that one process. **Model Context Protocol (MCP)** is the wire format so a different client can call the same tools. Cursor, Claude, and Copilot can share one server. You stop rewriting the tool list every time you change editors.
+
+MCP is not a new model and not a new agent framework. It is three things a server can offer: **tools** the model may call, **resources** the client can read, and **prompts** the client can fill in. Your smoke test is still one tool, one allowlist, and a result you can see in the client.
+
+### What MCP is for
+
+A tool call inside LangGraph or the OpenAI Agents SDK is a function in your process. The schema, the credentials, and the logs live next to that process. MCP lifts the tool across a transport. The client discovers the catalog, the model asks for a call, the client sends it to the server, and the server returns the result. The model still does not run the tool. The server does, which means the server's permissions are the blast radius.
+
+Use MCP when two clients should see the same capability, or when the capability belongs to a system you do not want to import into the agent process. A retrieval function used only inside one Python script can stay a normal function. The day Cursor and a production agent both need it, that function becomes one MCP tool.
+
+#### Tools, resources, and prompts as a standard
+
+The [specification](https://modelcontextprotocol.io/) names three surfaces. Keep them separate so you do not hide a write inside something that sounds like a document.
+
+- **Tools** are actions. A name, a description, a schema for the arguments, and a result. This is the same contract as function calling. The description is what the model uses to decide to call it, so write it like a skill description: when to use the tool, and what it will not do.
+- **Resources** are data the client can read: a file, a row, a schema, addressed by a URI. Reading a resource is not the same as giving the model a tool that can list every file on the machine. Prefer a resource for something the user attached, and a tool for something the model may choose.
+- **Prompts** are templates the client can offer, with arguments filled in before they reach the model. They are not a substitute for the prompt files you version in Git. Use an MCP prompt when a client should surface a reusable task ("summarize this ticket") without each user pasting it.
+
+The current specification revision is **2026-07-28**. That revision makes the core a stateless request/response protocol, puts method and tool names in HTTP headers so a gateway can route on them, and gives list responses cache hints so a client can keep a tool catalog stable. The [announcement](https://blog.modelcontextprotocol.io/posts/2026-07-28/) is the short version. You do not need to re-implement the protocol. You need a current SDK, and you need to know that a server written a year ago may still be on the previous shape. The Tier 1 SDKs speak the new revision and still answer older clients.
+
+Two transports cover the week. **stdio** is a process the client starts on your machine. The server inherits your user. **Streamable HTTP** is a server you reach over the network. A remote server without authentication is a tool catalog on the internet. Start on stdio.
+
+#### Clients you already use: [Claude](https://docs.anthropic.com/en/docs/claude-code/mcp), [Cursor](https://cursor.com/docs/mcp), and [Copilot](https://docs.github.com/en/copilot)
+
+You already picked one of these for a week in Coding Agents and Skills. Add MCP there before you write a server.
+
+- **[Claude Code](https://docs.anthropic.com/en/docs/claude-code/mcp)** and the Claude desktop app attach servers in their MCP config. A local server is a command the client spawns. A remote server is a URL. Confirm the tool list in the client before you ask the model to use it.
+- **[Cursor](https://cursor.com/docs/mcp)** reads MCP servers from the project or from your user settings. Project config belongs in the repo when the whole team should get the same server, and it must not contain a token. User config is where a personal key lives.
+- **[GitHub Copilot](https://docs.github.com/en/copilot)** can use MCP servers in the editor and the CLI. Follow GitHub's own setup page for the config file name. The behavior you care about is the same: a catalog of tools, a call you can see, and a result that comes back into the chat.
+
+The first connection is an official server, not yours. Point the [filesystem reference server](https://github.com/modelcontextprotocol/servers) at one directory you choose, ask a question that requires a file in that directory, and watch the client show the call. If the model answers without a call, the server is not connected or the question did not need the tool. Fix that before you write code. A client that silently skips a missing server will also silently skip the server you are about to publish.
+
+### Run official and community servers
+
+The [reference servers](https://github.com/modelcontextprotocol/servers) are the catalog: filesystem, git, fetch, and others people have published beside them. Treat a community server like a dependency that can run code as you. Read the tool list before you enable it. One server this week. A second server when the first call is boring.
+
+#### The [MCP specification](https://github.com/modelcontextprotocol/specification) and reference servers
+
+The **[specification](https://github.com/modelcontextprotocol/specification)** is the contract. The website [modelcontextprotocol.io](https://modelcontextprotocol.io/) renders the revision you should read. When a blog and the spec disagree, the spec revision wins. When an SDK and the spec disagree, check which revision the SDK README claims. As of the 2026-07-28 release, the TypeScript, Python, Go, and C# SDKs are the Tier 1 set that tracks the spec. Other languages exist at lower tiers. Pick Tier 1 unless you already live in another language and have checked that SDK's revision.
+
+Run a reference server from the [servers repository](https://github.com/modelcontextprotocol/servers) with the narrowest scope the README allows. The filesystem server takes a directory. Give it a fixture folder, not your home directory. The fetch server can request URLs. Give it nothing until you have an allowlist of hosts. A "do anything" server is a shell with a protocol in front of it. Disable it.
+
+After the client lists the tools, call one and read the raw result. Then ask for something outside the scope, such as a path you did not pass in. The server should refuse. If it returns the file, the scope is wrong. Fix the scope before you trust the client.
+
+#### [Python SDK](https://github.com/modelcontextprotocol/python-sdk) and [TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk)
+
+Use the official SDK for the language you already test. Both are on a **v2** line that implements the 2026-07-28 revision.
+
+- **[Python](https://py.sdk.modelcontextprotocol.io/).** `pip install "mcp[cli]"` (or `uv add`). The high-level server class is `MCPServer`. A tool is a typed function and a docstring. v1 called that class `FastMCP`. If you are copying an old snippet, follow the [v2 migration notes](https://py.sdk.modelcontextprotocol.io/whats-new/) instead of fighting the import. The same process can serve stdio for a local client and Streamable HTTP for a remote one, and it still answers a client on the previous revision.
+- **[TypeScript](https://github.com/modelcontextprotocol/typescript-sdk).** The v2 packages are `@modelcontextprotocol/server` and `@modelcontextprotocol/client`. Register a tool with a schema (Zod or another Standard Schema library) and a handler. The v1 package `@modelcontextprotocol/sdk` remains on the `v1.x` branch for fixes. New servers go to v2. Docs for the v1 API stay at [ts.sdk.modelcontextprotocol.io](https://ts.sdk.modelcontextprotocol.io/) so an existing server has a place to look during the move.
+
+Hello-world tools that add two numbers prove the transport. They do not prove your server. The next section replaces that toy with one call your stack already makes.
+
+### Write a small MCP server for your own stack
+
+One internal capability. One tool. The capability should already have a function, a test, and an auth story. MCP is the adapter. It is not the place you invent the business logic.
+
+A good first tool is read-only and narrow: "return the status of this ticket id," or "return the top chunks for this question" using the retrieval function you already score. A bad first tool is "query the database," "read a path," or "run this command."
+
+#### Expose one internal API as tools
+
+Wrap a function you can call from a unit test without a model.
+
+1. **Name** the tool as a verb the model can choose: `get_ticket`, not `tool1`.
+2. **Describe** when to call it and what it returns. Include the identifier the arguments require. If the description says "helps with tickets," the model will call it for every sentence that contains the word ticket.
+3. **Schema** the arguments in the SDK's types. An id is a string with a pattern, or an integer, not a free-form "query" that accepts SQL.
+4. **Call** your existing function. Map its errors to a tool error the client can show. Do not catch everything and return a cheerful string.
+5. **Return** a small payload: the fields a later structured-output step might validate. Log the call on the server: tool name, argument ids, latency, and whether it was allowed. Do not log the full customer record if the record is the sensitive part.
+
+Point the same client you used for the filesystem server at this process over stdio. Ask a question that includes a real fixture id. The trace should show `get_ticket` and the fixture's status. Ask a question with no id. The model should not invent an id, and the server should reject a malformed one. That pair of runs is the smoke test. Keep it next to the server the way the prompt smoke test sits next to the prompt file.
+
+When a second client needs the tool, add the same server there. If the two clients disagree, the bug is in a client config, not a reason to fork the tool.
+
+#### Auth, allowlists, and the blast radius of a tool
+
+A tool is code that runs when a model is persuaded to ask. Persuasion is not a permission check. The server checks.
+
+- **Allowlist the tools in the client.** Disable every tool you are not testing. A server that exposes twenty tools gives the model twenty actions on every turn. Turn on the one in the smoke test.
+- **Allowlist the data.** A ticket tool accepts ids that exist in the fixture or in the caller's tenant. It does not accept "all tickets," and it does not follow an id from a document the model retrieved unless your policy says so. Retrieval text is untrusted, the same way user text is untrusted.
+- **stdio inherits you.** Anyone who can start that process can use your files and your environment. Keep the command and the working directory in the client config explicit. Do not point a reference filesystem server at `~`.
+- **HTTP needs an identity.** A Streamable HTTP server on a network uses the specification's authorization (OAuth, or the enterprise extension your gateway already has). Binding it to every interface with no token is how a demo becomes an incident. The 2026-07-28 headers (`Mcp-Method`, `Mcp-Name`) exist so a proxy can allow or deny a tool without reading the body. Use that if you already have a gateway. Do not invent a shared secret in the repo.
+- **Writes wait.** A tool that creates, deletes, sends, or pays gets the human approval gate from the agent chapter. The MCP server can expose the tool and still refuse to run it until an approval id is present. The model's "the user said yes" in the argument is not the approval.
+- **Secrets stay in the environment.** The server reads a key from the environment the process was given. The config you commit names the variable. It does not contain the value. Rotate the key if it ever landed in a chat or a screenshot, the same rule as the first API key.
+
+The blast radius is the union of every tool you enabled, running as the user the server runs as, against the data those tools can reach. Write that sentence down next to the server. If you cannot finish the sentence, you enabled too much.
+
+### Summary: Model Context Protocol (MCP)
+
+MCP is how a tool, a resource, or a prompt becomes a catalog any client can call. Read the [specification](https://modelcontextprotocol.io/) at revision 2026-07-28, run one [reference server](https://github.com/modelcontextprotocol/servers) inside [Claude Code](https://docs.anthropic.com/en/docs/claude-code/mcp), [Cursor](https://cursor.com/docs/mcp), or [Copilot](https://docs.github.com/en/copilot), and confirm the client shows the call. Build your own server with the [Python SDK](https://github.com/modelcontextprotocol/python-sdk) or the [TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk) on the v2 line, and wrap one read-only function you already test. Allowlist the tool and the data, treat stdio as your user, and do not put a remote server on the network without authorization. A write tool waits for the same human gate as any other side effect. Next is **Harness engineering**, where the loop around the model — tools, sandbox, permissions, and retries — is the thing you design, whether or not you use MCP to plug the tools in.

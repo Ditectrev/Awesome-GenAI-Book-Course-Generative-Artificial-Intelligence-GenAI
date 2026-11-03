@@ -1260,6 +1260,101 @@
 * [Playwright](https://playwright.dev/) or [Stagehand](https://github.com/browserbase/stagehand) on one origin; a canvas only if the run is the test <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
 * Working memory in the run; long-term memory dated and retrieved <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
 * Next loop: Model Context Protocol (MCP) <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+## Model Context Protocol (MCP) <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* One tool catalog that Cursor, Claude, and Copilot can share <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Tools, resources, and prompts, kept distinct <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The server runs the tool; the model only asks <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### What MCP is for <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* A function used by one script can stay a function <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* MCP is the adapter when a second client needs the same capability <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The server's permissions are the blast radius <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Tools, resources, and prompts as a standard <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Tools act; the description decides when the model calls them <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Resources are data the client reads, addressed by a URI <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Prompts are templates the client fills in <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Spec revision [2026-07-28](https://blog.modelcontextprotocol.io/posts/2026-07-28/): stateless requests, header routing <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* stdio on your machine first; Streamable HTTP only with auth <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Clients you already use: Claude, Cursor, and Copilot <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [Claude Code](https://docs.anthropic.com/en/docs/claude-code/mcp): a command or a URL in the MCP config <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Cursor](https://cursor.com/docs/mcp): project config in the repo, secrets in user config <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Copilot](https://docs.github.com/en/copilot): same catalog, same visible tool call <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* First connection: the filesystem reference server, one directory <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Run official and community servers <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* A community server is code that runs as you <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Read the tool list; enable one server this week <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### The MCP specification and reference servers <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [Specification](https://github.com/modelcontextprotocol/specification) on [modelcontextprotocol.io](https://modelcontextprotocol.io/) <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Tier 1 SDKs track the revision: TypeScript, Python, Go, C# <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Reference servers](https://github.com/modelcontextprotocol/servers): filesystem pointed at a fixture folder <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A path you did not allow must be refused <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Python SDK and TypeScript SDK <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [Python SDK](https://github.com/modelcontextprotocol/python-sdk) v2: `MCPServer`, typed tools, docstring as the description <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* v1's `FastMCP` moved; follow the [migration notes](https://py.sdk.modelcontextprotocol.io/whats-new/) <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk) v2: `@modelcontextprotocol/server` and `@modelcontextprotocol/client` <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* An add-two-numbers tool proves the transport, not your stack <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Write a small MCP server for your own stack <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Wrap a function that already has a test <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Read-only and narrow: a ticket id, or the retrieval function you already score <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Expose one internal API as tools <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Verb name, a description that says when not to call it, a strict argument schema <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Map errors to tool errors; do not swallow them into a cheerful string <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Fixture id returns the fixture status; a missing id is rejected <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Log tool name, ids, latency, and whether the call was allowed <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Auth, allowlists, and the blast radius of a tool <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Enable only the tool under test <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Ids from retrieved text are untrusted until your policy accepts them <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* stdio inherits your user; do not point a filesystem server at your home directory <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A remote server needs authorization; `Mcp-Name` lets a gateway deny a tool <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Writes wait for the same human gate as any other side effect <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Summary: Model Context Protocol (MCP) <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [Spec](https://modelcontextprotocol.io/) 2026-07-28; one [reference server](https://github.com/modelcontextprotocol/servers) in a client you already use <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Your server is one read-only function, on the [Python](https://github.com/modelcontextprotocol/python-sdk) or [TypeScript](https://github.com/modelcontextprotocol/typescript-sdk) v2 SDK <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Allowlist the tool and the data; stdio is you; HTTP needs an identity <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Next loop: Harness engineering <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
 					</textarea>
 				</section>
 			</div>
