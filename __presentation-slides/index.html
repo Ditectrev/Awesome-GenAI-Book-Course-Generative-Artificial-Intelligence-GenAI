@@ -1621,6 +1621,94 @@
 * [Langfuse](https://github.com/langfuse/langfuse), [Phoenix](https://github.com/Arize-ai/phoenix), or [LangSmith](https://docs.langchain.com/langsmith/home), with spans on [OpenTelemetry](https://opentelemetry.io/) <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
 * [NeMo](https://github.com/NVIDIA/NeMo-Guardrails) or [Guardrails AI](https://github.com/guardrails-ai/guardrails), and [Presidio](https://github.com/microsoft/presidio) for redaction <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
 * Next loop: Images, Audio, and Other Modalities <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+## Images, Audio, and Other Modalities <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* The same loop, with a picture or a recording and a check you can fail <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Copy the model id from the guide on the day you run <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* `gpt-image-1` left the API on 23 October 2026 <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Image generation you can repeat <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Save the prompt, the model id, the size, and the file <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The file opens, the object is there, and the required words are readable <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### ChatGPT Images, Gemini, and Flux-class models <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [ChatGPT Images](https://developers.openai.com/api/docs/guides/image-generation): one call, or a tool inside the agent loop <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Gemini](https://ai.google.dev/gemini-api/docs/image-generation): Nano Banana, on the account you already have <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Flux](https://docs.bfl.ai/quick_start/generating_images): submit, then poll the `polling_url`; pin a snapshot endpoint for an eval <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* One fixture prompt, one image, one rubric <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Diffusers, ComfyUI, and Automatic1111 WebUI <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [Diffusers](https://github.com/huggingface/diffusers): a Python pipeline you commit next to the smoke test <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [ComfyUI](https://github.com/Comfy-Org/ComfyUI): the graph JSON is the prompt file <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Automatic1111](https://github.com/AUTOMATIC1111/stable-diffusion-webui): read the latest release before a new project <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Speech in and speech out <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* One fixture sentence, replayed <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The transcript contains that sentence, and the transcript lands in the trace <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### OpenAI Whisper and whisper.cpp <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [Whisper](https://github.com/openai/whisper) locally, or the [speech guide](https://developers.openai.com/api/docs/guides/speech-to-text) <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* `whisper-1` is scheduled for removal on 26 February 2027; copy the current id <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [whisper.cpp](https://github.com/ggml-org/whisper.cpp) when the recording stays on the laptop <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Realtime voice stacks with LiveKit Agents <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [LiveKit Agents](https://github.com/livekit/agents): speech in, the model, speech out, one room <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A transcript you can read is the assertion <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* End the session; a voice loop left running is a spend loop <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Multimodal apps <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* A text request with an image attached <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The golden file stores the image path and the expected answer <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Vision in the same working loop as text <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [OpenAI](https://developers.openai.com/api/docs/guides/vision), [Claude](https://platform.claude.com/docs/en/build-with-claude/vision), and [Gemini](https://ai.google.dev/gemini-api/docs/vision) take an image with the question <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* One image, one fact, an answer that contains that fact <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The schema still binds the answer when the output must be an object <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### When a screenshot beats a thousand tokens of HTML <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* A [Playwright](https://playwright.dev/) screenshot when the question is what a person sees <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The accessibility snapshot when the question is a value in the page <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The fixture page is one you control <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Summary: Images, Audio, and Other Modalities <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* One image prompt, one rubric, the model id written down <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Diffusers](https://github.com/huggingface/diffusers) or [ComfyUI](https://github.com/Comfy-Org/ComfyUI) when the weight stays local <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Whisper](https://github.com/openai/whisper) or [whisper.cpp](https://github.com/ggml-org/whisper.cpp) on one sentence; [LiveKit Agents](https://github.com/livekit/agents) for one room <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Vision on the API you already call; a screenshot when the screen is the evidence <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Next loop: Shipping, Cost, and Operations <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
 					</textarea>
 				</section>
 			</div>
