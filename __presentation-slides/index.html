@@ -1508,6 +1508,119 @@
 * Then [OpenHands](https://github.com/OpenHands/OpenHands), [SWE-agent](https://github.com/SWE-agent/SWE-agent), or [E2B](https://github.com/e2b-dev/E2B) <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
 * [SWE-bench](https://github.com/SWE-bench/SWE-bench) or [Inspect](https://github.com/UKGovernmentBEIS/inspect_ai) for patches; [promptfoo](https://github.com/promptfoo/promptfoo) for prompts <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
 * Next loop: Evaluation, Tracing, and Guardrails <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+## Evaluation, Tracing, and Guardrails <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* A prompt, a RAG answer, or an agent step, scored like a test <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* One eval runner and one trace viewer for the week <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A repo patch still belongs to the project's tests <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Treat prompts and agents like code <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* A command runs frozen inputs and exits non-zero when the answer is wrong <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Pin the model id, the prompt version, and the case list in the same commit <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Golden sets, regressions, and pass or fail assertions <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Ten cases: five happy paths, three known failures, two refusals <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Prefer a check a machine applies without a model: schema, citation id, tool did not run <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A judge model is pinned, and it waits until that check exists <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A red case after a prompt edit is a failed change <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### promptfoo for prompt and red-team tests <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [promptfoo](https://github.com/promptfoo/promptfoo): prompts, models, assertions, CI <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The [red-team](https://www.promptfoo.dev/docs/red-team/) suite is a second file, graded on whether the app complied <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A coding-agent patch stays on the repo's tests <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Ragas and DeepEval for RAG and agent checks <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Did the answer stay inside the retrieved text, and did that text contain the fact? <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Ragas](https://github.com/explodinggradients/ragas): a table of scores when you compare two chunkers or two prompts <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [DeepEval](https://github.com/confident-ai/deepeval): the same check as a pytest threshold <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Judge metrics run when retrieval or the prompt changed; deterministic checks run every commit <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### See what the model actually did <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* The assertion says the run failed; the trace says which step failed <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Model id, prompt version, tool calls, chunk ids, tokens, assertion result <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Langfuse traces <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [Langfuse](https://github.com/langfuse/langfuse): traces, prompt versions, and scores you can self-host <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* One smoke-test run; find the tool span and the retrieved ids <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A score written by the eval command is the regression <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Arize Phoenix <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [Phoenix](https://github.com/Arize-ai/phoenix): local traces on OpenTelemetry and OpenInference <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A retriever span lists the chunk ids the golden question expected <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A final answer with no retrieval span never saw the index <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### LangSmith and OpenTelemetry-style traces <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [LangSmith](https://docs.langchain.com/langsmith/home) when the runtime is already LangChain or LangGraph <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [OpenTelemetry](https://opentelemetry.io/) is the pipe; one viewer is the place you look <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The stored text has the tool call and the token count, and no API key <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Safety you can operationalize <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* A check in code, on the way in, on retrieved text, on the tool call, and on the log <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The golden set contains the case that proves the check fired <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### PII, secrets, and prompt injection <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* A fixture email is masked in the provider call and in the trace <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A fixture secret is absent from the trace, the prompt log, and the answer <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A document that gives orders is data: the original task finishes, and the write tool stays uncalled <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### NVIDIA NeMo Guardrails and Guardrails AI <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [NeMo Guardrails](https://github.com/NVIDIA/NeMo-Guardrails): rails on input, retrieval, dialog, execution, and output <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Guardrails AI](https://github.com/guardrails-ai/guardrails): validators on the object you already require <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* One library; the trace shows which rail or validator fired <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Microsoft Presidio for detection and redaction <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [Presidio](https://github.com/microsoft/presidio) detects PII and replaces it <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Run it before the provider call, before retrieved text enters the prompt, and before the trace is stored <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Search the trace for the fixture email; the search misses, and the task still gets an answer <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Summary: Evaluation, Tracing, and Guardrails <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* A golden file, a failing command, and a trace of the step that failed <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [promptfoo](https://github.com/promptfoo/promptfoo) for prompts and red team; [Ragas](https://github.com/explodinggradients/ragas) or [DeepEval](https://github.com/confident-ai/deepeval) for RAG <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Langfuse](https://github.com/langfuse/langfuse), [Phoenix](https://github.com/Arize-ai/phoenix), or [LangSmith](https://docs.langchain.com/langsmith/home), with spans on [OpenTelemetry](https://opentelemetry.io/) <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [NeMo](https://github.com/NVIDIA/NeMo-Guardrails) or [Guardrails AI](https://github.com/guardrails-ai/guardrails), and [Presidio](https://github.com/microsoft/presidio) for redaction <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Next loop: Images, Audio, and Other Modalities <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
 					</textarea>
 				</section>
 			</div>

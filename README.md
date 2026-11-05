@@ -1718,3 +1718,97 @@ Do not use promptfoo to pretend a coding agent succeeded. A coding run is scored
 ### Summary: Harness engineering
 
 A harness is the loop around the model: tools, a sandbox, permissions, compaction, and retries, with a stop you can defend. Use [Cursor](https://cursor.com/), [Claude Code](https://github.com/anthropics/claude-code), or [Codex](https://github.com/openai/codex) until you can name the control they will not give you. Then add that control, or clone [Codex CLI](https://github.com/openai/codex), [OpenHands](https://github.com/OpenHands/OpenHands), or [SWE-agent](https://github.com/SWE-agent/SWE-agent), and isolate the work in [E2B](https://github.com/e2b-dev/E2B) when the laptop is the wrong computer. Score a repo patch with the [SWE-bench](https://github.com/SWE-bench/SWE-bench) pattern or [Inspect](https://github.com/UKGovernmentBEIS/inspect_ai), and score a prompt with [promptfoo](https://github.com/promptfoo/promptfoo). Keep the runtime that acts separate from the eval that grades it. Next is **Evaluation, Tracing, and Guardrails**, where those scores, the traces, and the safety checks become a suite you run like tests.
+
+## Evaluation, Tracing, and Guardrails
+
+A harness that you cannot score will drift. This chapter turns the checks you already have — a schema, five retrieval questions, a tool trace, a refusal — into a suite that fails in CI the way a unit test fails. A repo patch still belongs to the project's tests, as in Harness engineering. Here the artifact is a prompt, a RAG answer, or an agent step, and the evidence is an assertion plus a trace.
+
+Pick one eval runner and one trace viewer for the week. Add a guardrail only after a golden case shows the failure you mean to block.
+
+### Treat prompts and agents like code
+
+A prompt file in Git is already a start. The missing piece is a command that runs it against frozen inputs and exits non-zero when the answer is wrong. That command is the eval. The model id, the prompt version, and the case list are pinned in the same commit as the change you are judging.
+
+#### Golden sets, regressions, and pass or fail assertions
+
+A golden set is a small file of cases you can explain to a teammate. Ten is enough to start. Borrow them from work you already did:
+
+- Five happy paths, including the smoke-test sentence and the five retrieval questions from the RAG chapter, each with the quote or the record you expect.
+- Three known failures: a schema that must reject prose, a retrieval that must return no chunk, a tool call that must stop at the human gate.
+- Two refusals: a request the product must decline, and a document that contains an instruction the model must treat as data.
+
+Each case has an input, the context you supplied (chunks, tool results, or none), and a check that a machine can apply. Prefer a check you could write without a model: the JSON validates, the citation is one of the chunk ids, the expected tool did not run, the answer contains the fixture sentence. When you need a judge model, pin its id and its prompt, and keep it off the case until the deterministic check is in place. An unpinned judge is a second demo.
+
+A regression is a case that passed last week. When you edit the prompt, the chunker, the tool list, or the model id, rerun the file. A red case is a failed change. Raise a threshold only after you have read the trace and can say which fact the new answer dropped.
+
+#### [promptfoo](https://github.com/promptfoo/promptfoo) for prompt and red-team tests
+
+[promptfoo](https://www.promptfoo.dev/docs/intro/) is the runner for this file when the thing under test is a prompt, a provider, or a small RAG function. A config lists the prompts, the models, and the assertions. `contains`, `equals`, JSON schema, and a citation check fail the process when they miss. Put that command in CI next to the unit tests.
+
+The [red-team](https://www.promptfoo.dev/docs/red-team/) config is a second suite, not a replacement for the golden set. It generates adversarial cases — harmful requests, attempts to pull a secret, attempts to make the model follow an instruction that arrived in a retrieved page — and grades whether the application complied. You read the report. A plugin that shows the model did the disallowed thing fails the build. You do not paste those prompts into the production system prompt as examples to "teach" it. The fix is a rail, a filter, or a tighter tool allowlist, then a rerun.
+
+Keep promptfoo on prompts and on this red-team suite. A coding agent that must patch a repository stays on the SWE-bench shape from the previous chapter.
+
+#### [Ragas](https://github.com/explodinggradients/ragas) and [DeepEval](https://github.com/confident-ai/deepeval) for RAG and agent checks
+
+When the golden question needs a judgment about a retrieved answer, add one metric library. Both score the generator against the chunks you actually retrieved, and both can score whether those chunks were the right ones. Start with two questions you can say out loud: did the answer stay inside the retrieved text, and did the retrieved text contain the fact the question needed?
+
+- **[Ragas](https://docs.ragas.io/)** evaluates an experiment: a dataset of questions, the retrieved contexts, the answers, and metrics such as faithfulness and answer relevancy. Use it when you are comparing two chunkers or two prompts on the same questions and you want a table of scores. Pin the judge model. A faithfulness drop means the answer made a claim the chunks do not support. Go back to retrieval, which the RAG chapter already told you to score before you edit the prompt.
+- **[DeepEval](https://deepeval.com/docs/getting-started)** runs the same kind of check as a Python test, with `pytest` and a threshold. Faithfulness and answer relevancy cover the generator. Contextual precision and contextual recall cover the retriever, and they need an expected answer on the case. Use DeepEval when the suite should live beside the rest of the Python tests and fail the job when a metric falls through the threshold you committed.
+
+One library for the week. A metric that calls a judge on every case spends tokens. Keep the deterministic golden checks on every commit, and run the judge metrics on the RAG set when the retriever or the prompt changed. An agent case in either library still needs the tool trace: the score is wrong if the expected tool never ran, even when the final sentence looks fine.
+
+### See what the model actually did
+
+An assertion tells you the run failed. A trace tells you which step failed. Log one trace for the smoke test before you pick a vendor dashboard. The trace has the model id, the prompt version, each tool call and its result, the retrieved chunk ids, the token counts, and the assertion result. If a field is missing, the viewer will not invent it.
+
+#### [Langfuse](https://github.com/langfuse/langfuse) traces
+
+[Langfuse](https://langfuse.com/docs) stores traces, prompt versions, and scores, and you can self-host it. Use it when the trace must live in infrastructure you operate, next to the prompt file that produced it. Send one smoke-test run. In the UI, open the trace and find the tool span and the retrieved ids. A score you attach by hand is a note. A score written by the eval command is the regression.
+
+Langfuse accepts [OpenTelemetry](https://langfuse.com/docs/opentelemetry) spans on an OTLP endpoint. Prefer that path when the application already emits spans, so a later move to another viewer is an exporter change.
+
+#### [Arize Phoenix](https://github.com/Arize-ai/phoenix)
+
+[Phoenix](https://arize.com/docs/phoenix/tracing/llm-traces) is a local-first trace store built on OpenTelemetry and [OpenInference](https://arize.com/docs/phoenix/tracing/concepts-tracing/otel-openinference/overview). OpenInference is the convention for what an LLM span contains: the messages, the tool, the retriever, the token counts. Instrumentors cover the SDKs this book already uses, including OpenAI, Anthropic, LlamaIndex, LangChain, and the Vercel AI SDK. Use Phoenix when you want the trace on your machine during the week you are debugging retrieval or a tool loop, and when you want that trace to stay portable.
+
+Run one request. Confirm a retriever span lists the chunk ids your golden question expected. A span with the final answer and no retrieval is a prompt that never saw the index.
+
+#### [LangSmith](https://docs.langchain.com/langsmith/home) and [OpenTelemetry](https://opentelemetry.io/)-style traces
+
+[LangSmith](https://docs.langchain.com/langsmith/home) is the hosted trace viewer that fits if the runtime is already LangChain or LangGraph. The same run that checkpointed in the agents chapter should appear as a tree of model and tool spans. Use it when the team is already there. It also ingests [OpenTelemetry](https://docs.langchain.com/langsmith/trace-with-opentelemetry).
+
+The portable habit is the span, not the website. [OpenTelemetry](https://opentelemetry.io/docs/what-is-opentelemetry/) is the pipe: your process exports spans, a collector can fan them out, and Langfuse, Phoenix, or LangSmith can be the place you look. Pick one place to look this week. Emitting three copies of every prompt into three products is a cost and a privacy problem, not observability. Whichever viewer you pick, the smoke test is the same: one run, the tool call visible, the chunk ids visible, the token count visible, and no API key in the stored text.
+
+### Safety you can operationalize
+
+A safety policy that lives only in the system prompt will be talked out of, the same way a permission in the prompt will. Operational safety is a check that runs in code: on the way in, on the retrieved text, on the tool call, and on the way out to the user and to the log. The golden set contains the case that proves the check fired.
+
+#### PII, secrets, and prompt injection
+
+Three failures are enough to test this week.
+
+- **PII.** A fixture user message contains a made-up email, phone number, and account id. The text that reaches the model provider, and the text that lands in the trace, has those values removed or masked. The application can still answer the question.
+- **Secrets.** A fixture that includes a fake API key must not appear in the trace, the prompt log, or the answer. The hosted-models chapter already kept real keys out of chat. This check keeps them out of the eval artifact too. A trace export that still contains the fixture secret fails the suite.
+- **Prompt injection.** Retrieved pages, tool results, and web fetches are data. A golden document includes an instruction to ignore the task, reveal the system prompt, or call a write tool. The pass condition is the original task completed, the system prompt absent from the answer, and the write tool absent from the trace. The harness allowlist and the human gate still apply. The eval proves they held.
+
+Read every failure. A redaction that eats the account id the user asked you to look up is a broken product. Narrow the detector. A model that followed the document's instruction is a failed rail, and the fix is in the filter or the tool gate, then a rerun of the same case.
+
+#### [NVIDIA NeMo Guardrails](https://github.com/NVIDIA/NeMo-Guardrails) and [Guardrails AI](https://github.com/guardrails-ai/guardrails)
+
+When the golden case fails in a way a one-off `if` will not cover, put the policy in a guardrails library. One library.
+
+- **[NVIDIA NeMo Guardrails](https://docs.nvidia.com/nemo/guardrails/latest/about-nemo-guardrails-library/overview)** wraps the conversation. Rails run on input, retrieval, dialog, execution, and output. Colang describes the flows you allow. Use it when the policy is about the dialog: which topics are in bounds, which tools may execute, what to say when a rail trips. It can call Presidio to detect or mask PII on the way through. The trace should show which rail fired.
+- **[Guardrails AI](https://guardrailsai.com/docs)** validates and can re-ask. A guard is a set of validators on the input or the output: a schema, a banned substring, a PII validator from the Hub. Use it when the policy is about the object you already demand in Structured Outputs. A validator failure is the same as a schema failure: cap the retry, pass the validator message back once, then stop and log.
+
+Choose NeMo when the risk is the conversation taking an action. Choose Guardrails AI when the risk is a field in the object. Running both on day one means you will not know which layer blocked the fixture.
+
+#### [Microsoft Presidio](https://github.com/microsoft/presidio) for detection and redaction
+
+[Presidio](https://microsoft.github.io/presidio/) finds PII and replaces it. The analyzer detects entities. The anonymizer masks or substitutes them. Run it on user text before the provider call, on retrieved text before it enters the prompt, and on the trace payload before you store it. A NeMo rail or a Guardrails validator may call Presidio. You can also call it yourself in the logging path so a trace viewer never becomes a second copy of the customer's inbox.
+
+The smoke test is the fixture email. Search the trace for it. The search misses, the answer still solves the task, and the golden case stays in the suite so the next prompt edit cannot turn redaction off by accident.
+
+### Summary: Evaluation, Tracing, and Guardrails
+
+Treat the prompt and the agent like code: a golden file, a pass or fail command, and a trace of the run that failed. [promptfoo](https://github.com/promptfoo/promptfoo) runs the prompt assertions and the red-team suite. [Ragas](https://github.com/explodinggradients/ragas) or [DeepEval](https://github.com/confident-ai/deepeval) scores a RAG answer against the chunks you retrieved. Look at the run in [Langfuse](https://github.com/langfuse/langfuse), [Phoenix](https://github.com/Arize-ai/phoenix), or [LangSmith](https://docs.langchain.com/langsmith/home), and keep the spans in [OpenTelemetry](https://opentelemetry.io/) so the viewer can change. Block PII, secrets, and injected instructions with a case you can rerun, using [NeMo Guardrails](https://github.com/NVIDIA/NeMo-Guardrails) or [Guardrails AI](https://github.com/guardrails-ai/guardrails), and [Presidio](https://github.com/microsoft/presidio) where the job is redaction. Next is **Images, Audio, and Other Modalities**, where the same loop takes a picture or a recording and still has to pass a check.
