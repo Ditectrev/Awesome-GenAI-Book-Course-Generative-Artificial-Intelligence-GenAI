@@ -1812,3 +1812,69 @@ The smoke test is the fixture email. Search the trace for it. The search misses,
 ### Summary: Evaluation, Tracing, and Guardrails
 
 Treat the prompt and the agent like code: a golden file, a pass or fail command, and a trace of the run that failed. [promptfoo](https://github.com/promptfoo/promptfoo) runs the prompt assertions and the red-team suite. [Ragas](https://github.com/explodinggradients/ragas) or [DeepEval](https://github.com/confident-ai/deepeval) scores a RAG answer against the chunks you retrieved. Look at the run in [Langfuse](https://github.com/langfuse/langfuse), [Phoenix](https://github.com/Arize-ai/phoenix), or [LangSmith](https://docs.langchain.com/langsmith/home), and keep the spans in [OpenTelemetry](https://opentelemetry.io/) so the viewer can change. Block PII, secrets, and injected instructions with a case you can rerun, using [NeMo Guardrails](https://github.com/NVIDIA/NeMo-Guardrails) or [Guardrails AI](https://github.com/guardrails-ai/guardrails), and [Presidio](https://github.com/microsoft/presidio) where the job is redaction. Next is **Images, Audio, and Other Modalities**, where the same loop takes a picture or a recording and still has to pass a check.
+
+## Images, Audio, and Other Modalities
+
+Text was the loop you can already trace. A picture or a recording is the same loop with a different input and a check you can still fail in CI. Generate one image from a prompt file you commit. Transcribe one fixture recording. Ask one question about one image. Save the model id next to the file, because a tutorial's model id goes stale: `gpt-image-1` was removed from the OpenAI API on 23 October 2026, and the speech models that include `whisper-1` are scheduled for removal on 26 February 2027. Copy the current id from the guide on the day you run the smoke test.
+
+### Image generation you can repeat
+
+Repeatable means you can run the same prompt next month and grade the result with the same rubric. It does not mean the pixels match. Hosted image models move. When an API exposes a seed, record it. When it does not, record the prompt, the model id, the size, and the file you saved. The check is a short list: the file opens, the object you asked for is there, and any required words in the image are readable. Words in images are the usual failure. Put one short string in the fixture prompt and look at it before you trust the run.
+
+#### [ChatGPT Images](https://developers.openai.com/api/docs/guides/image-generation), [Gemini](https://ai.google.dev/gemini-api/docs/image-generation), and [Flux](https://docs.bfl.ai/quick_start/generating_images)-class models
+
+Pick one hosted generator for the week. The prompt lives in Git beside the rubric.
+
+- **[ChatGPT Images](https://developers.openai.com/api/docs/guides/image-generation).** OpenAI's image guide covers the Images API for one generation or one edit, and the Responses API when image generation is a tool inside the loop you already run. Read the current GPT Image model id on that page. Use the Images API when the task is a single picture. Use the tool when an agent should decide to make or edit a picture and the trace should show that call. Save the image, and keep the prompt that produced it.
+- **[Gemini](https://ai.google.dev/gemini-api/docs/image-generation).** Google calls native image generation Nano Banana. It generates and edits images in the same Gemini API you already use for text, including conversational edits. Use it when the image work should stay on the Gemini account you opened in the hosted-models chapter. Copy the current model id from the image-generation guide.
+- **[Flux](https://docs.bfl.ai/quick_start/generating_images).** [Black Forest Labs](https://docs.bfl.ai/quick_start/generating_images) serves the FLUX family over an async API: you submit a prompt, then you poll the `polling_url` from the response. Use Flux when you want that API or the open weights in a local pipeline. The quick start lists the current endpoints. A fixed snapshot endpoint is the one to pin when the eval must hit the same model next month. A "latest" endpoint is for exploration.
+
+Spend caps from the first API chapter still apply. Image calls are easy to loop. One fixture prompt, one image, one rubric. A grid of twenty variations is a later experiment, after the single image passes.
+
+#### [Diffusers](https://github.com/huggingface/diffusers), [ComfyUI](https://github.com/Comfy-Org/ComfyUI), and [Automatic1111 WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui)
+
+Move local when the weight must run on your machine, or when the hosted model will not accept the control you need. One local tool.
+
+- **[Diffusers](https://huggingface.co/docs/diffusers).** The Hugging Face library for running a pipeline from Python: load a checkpoint, run the prompt, save the image. Use it when the image step belongs in the same script as the rest of your smoke test, and when the checkpoint is on the Hub. Commit the script and the model id. The assertion is the rubric, run by you or by a vision model on the saved file.
+- **[ComfyUI](https://docs.comfy.org).** A node graph for a generation workflow. The graph is a JSON file you can commit, which is the closest thing local image work has to a prompt file. Use it when the pipeline is more than one prompt: a reference image, an edit, an upscale. New model families tend to show up here first. Run the saved graph once and keep the output next to the graph version.
+- **[Automatic1111 WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui).** The form-style Stable Diffusion page older tutorials assume: a prompt box, sliders, and extensions. Read the repository's latest release before you start a new project on it. New families land in ComfyUI and Diffusers first. Keep A1111 for a workflow you already have and can still reproduce.
+
+The local smoke test is the same rubric as the hosted one, plus a note of the GPU or the CPU path you used. A checkpoint you cannot name and re-download is not reproducible.
+
+### Speech in and speech out
+
+Speech in is a recording that becomes text. Speech out is text that becomes audio. Both need a fixture you can replay. A wav file with one known sentence is enough for speech in. The check is that the transcript contains that sentence. For speech out, save the audio and confirm a second pass through the transcriber returns the sentence you sent. Store the transcript in the same trace as a tool call. Audio of a customer is PII. The fixture is a sentence you recorded, and the retention rule from the guardrails chapter applies the day a real caller shows up.
+
+#### [OpenAI Whisper](https://github.com/openai/whisper) and [whisper.cpp](https://github.com/ggml-org/whisper.cpp)
+
+**[Whisper](https://github.com/openai/whisper)** is the open speech-to-text model. You can run the Python repository locally, or call speech-to-text on the [OpenAI audio guide](https://developers.openai.com/api/docs/guides/speech-to-text). The hosted model id changes. The [deprecations](https://developers.openai.com/api/docs/deprecations) list `whisper-1` and the `gpt-4o-transcribe` family for removal on 26 February 2027. Copy the current id from the speech guide, and keep the fixture wav so the swap is a one-line change you can score.
+
+**[whisper.cpp](https://github.com/ggml-org/whisper.cpp)** is the C++ port for a machine without a Python GPU stack: CPU, Apple Silicon, and NVIDIA among its backends. Use it when the recording must stay on the laptop, the way a local chat model stayed on the laptop. Point it at the same fixture wav. The transcript either contains the sentence or you change the model size and run it again. One size for the week.
+
+#### Realtime voice stacks with [LiveKit Agents](https://github.com/livekit/agents)
+
+**[LiveKit Agents](https://docs.livekit.io/agents/)** is the framework for a voice agent: speech-to-text, the model you already call, and text-to-speech, in a room a person can join. Plugins cover the providers you have keys for, and LiveKit Inference can serve the audio models when you want that bill in one place. Some speech-to-text models, including Whisper-style batch models, need a voice-activity detector so the agent knows the speaker has paused. The docs call that out. A realtime model is the other shape: audio in and audio out without a separate transcript step. Start with the pipeline you can log. A transcript you can read is the assertion. A waveform you can only listen to is a demo.
+
+The smoke test is one room and one utterance of the fixture sentence. The trace shows the transcript, the model reply, and that a spoken turn came back. Then the session ends. A voice loop left running is a spend loop. The step cap and the spend cap still apply, and a tool the voice agent can call waits on the same human gate as any other side effect.
+
+### Multimodal apps
+
+A multimodal request is a text request with an image, a page photo, or a screenshot attached. The output you grade is still text, unless you asked for an image. The golden file gains a path to the fixture image and the expected answer. The trace records the model id and that an image part was sent. It does not need to store a second copy of a customer screenshot.
+
+#### Vision in the same working loop as text
+
+Use the vision input on an API you already call. [OpenAI](https://developers.openai.com/api/docs/guides/vision), [Claude](https://platform.claude.com/docs/en/build-with-claude/vision), and [Gemini](https://ai.google.dev/gemini-api/docs/vision) all accept an image with the question. The smoke test is one image you made, with one fact in it, and a question whose answer is that fact. The assertion is exact: the answer contains the fact. A judge model is optional and comes after that check, the same rule as the eval chapter.
+
+Ask for the thing the image actually holds. A photo of a receipt can yield the total. A diagram can yield the label on a box. A request to invent a paragraph the image does not contain will be answered with a fluent guess. Fail that case, then narrow the question. Structured output still applies when the answer must be an object: the image is evidence, the schema is the contract.
+
+#### When a screenshot beats a thousand tokens of HTML
+
+The agents chapter already opens a page with [Playwright](https://playwright.dev/) and treats a screenshot or an accessibility snapshot as evidence. Here you choose which of those to send to the model.
+
+Send a screenshot when the question is what a person sees: layout, a broken button, a chart, a canvas, text that exists only as pixels. Send the accessibility snapshot, or a thin extract of the text, when the question is a value in the page: an order id, a heading, a price in the DOM. A full HTML dump spends the context window on scripts and class names, and it still misses the pixels. The intro's rule stands: vision in the same loop is often the cheaper path once the text path is lying about the screen.
+
+The fixture is a page you control. Playwright saves one screenshot. The vision call answers one question you wrote down, and the answer matches. A production screenshot can contain an email or an account id. Treat it as you treated PII in the guardrails chapter: the fixture stays synthetic until you have a reason to send a real screen and a place the image is allowed to live.
+
+### Summary: Images, Audio, and Other Modalities
+
+A picture and a recording join the same loop as text, with a fixture and a check. Generate one image from a prompt in Git with [ChatGPT Images](https://developers.openai.com/api/docs/guides/image-generation), [Gemini](https://ai.google.dev/gemini-api/docs/image-generation), or [Flux](https://docs.bfl.ai/quick_start/generating_images), and grade it with a rubric that includes any words that must be readable. Run a local pipeline in [Diffusers](https://github.com/huggingface/diffusers) or [ComfyUI](https://github.com/Comfy-Org/ComfyUI) when the weight has to live on your machine, and read the latest release before you start new work on [Automatic1111](https://github.com/AUTOMATIC1111/stable-diffusion-webui). Transcribe one fixture sentence with [Whisper](https://github.com/openai/whisper) or [whisper.cpp](https://github.com/ggml-org/whisper.cpp), and put a voice agent in a [LiveKit Agents](https://github.com/livekit/agents) room only long enough to see the transcript and the reply. Ask one vision question on an API you already use, and send a [Playwright](https://playwright.dev/) screenshot when the question is what the user sees. Next is **Shipping, Cost, and Operations**, where this loop gets a UI, a bill, and a limit you can enforce.
