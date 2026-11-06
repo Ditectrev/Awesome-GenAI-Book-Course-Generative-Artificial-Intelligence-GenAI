@@ -1878,3 +1878,96 @@ The fixture is a page you control. Playwright saves one screenshot. The vision c
 ### Summary: Images, Audio, and Other Modalities
 
 A picture and a recording join the same loop as text, with a fixture and a check. Generate one image from a prompt in Git with [ChatGPT Images](https://developers.openai.com/api/docs/guides/image-generation), [Gemini](https://ai.google.dev/gemini-api/docs/image-generation), or [Flux](https://docs.bfl.ai/quick_start/generating_images), and grade it with a rubric that includes any words that must be readable. Run a local pipeline in [Diffusers](https://github.com/huggingface/diffusers) or [ComfyUI](https://github.com/Comfy-Org/ComfyUI) when the weight has to live on your machine, and read the latest release before you start new work on [Automatic1111](https://github.com/AUTOMATIC1111/stable-diffusion-webui). Transcribe one fixture sentence with [Whisper](https://github.com/openai/whisper) or [whisper.cpp](https://github.com/ggml-org/whisper.cpp), and put a voice agent in a [LiveKit Agents](https://github.com/livekit/agents) room only long enough to see the transcript and the reply. Ask one vision question on an API you already use, and send a [Playwright](https://playwright.dev/) screenshot when the question is what the user sees. Next is **Shipping, Cost, and Operations**, where this loop gets a UI, a bill, and a limit you can enforce.
+
+## Shipping, Cost, and Operations
+
+The loop works on your machine. Shipping is the same loop behind a URL a teammate can open, with a bill you can read and a limit that fails closed. This chapter adds one surface, one gateway, and a budget. An adapter comes last, after retrieval and the golden set have already had their turn. The intro's split still holds: inference is the runtime you own, and training is a build you rarely run.
+
+### Productize the working loop
+
+A product is the smoke-test sentence, answered through a UI, with the key still on a server. The chat history is a log. The assertion is unchanged: the answer contains the fixture fact, and the trace shows the model id.
+
+#### [Open WebUI](https://github.com/open-webui/open-webui), [Lobe Chat](https://github.com/lobehub/lobe-chat), and your own thin UI
+
+You already have a script. A UI is how someone who will not run that script uses the loop. Pick one surface.
+
+- **[Open WebUI](https://docs.openwebui.com/).** The local chat in front of [Ollama](https://ollama.com/) or any OpenAI-compatible endpoint, from the local-models chapter. Use it when the team needs accounts and a chat this week and the model is already running. The data volume holds prompts. Set the secret key, and treat a backup of that volume as a backup of the conversations.
+- **[Lobe Chat](https://github.com/lobehub/lobe-chat).** A self-hosted chat that speaks to many providers from one screen. Use it when the thing you are shipping is the chat itself and you want that UI rather than a page inside your app. The provider keys stay in the server config, the same rule as every other host.
+- **Your own thin UI.** [Vercel AI SDK](https://ai-sdk.dev/) streams tokens into a page you already own. Use it when chat is a feature of your product. One route, one model, the key only on the server. Skip it until a non-streaming call with the native SDK already passes, so a blank page is a UI bug you can separate from an API bug.
+
+The smoke test goes through the surface you picked. If the script passes and the UI fails, the bug is in the UI. If both fail, you have not shipped a new model. You have broken the loop.
+
+#### Streaming, timeouts, and fallbacks
+
+Stream when a person is waiting on the page. The first tokens are the loading state. The assertion still reads the finished answer, because a stream can die after a fluent opening. Set a client timeout that is longer than a normal answer and shorter than a hung socket. On timeout, show the failure and keep the partial text out of the golden log unless you mean to grade partials.
+
+A fallback is a second model id the gateway calls when the first returns a 429 or a 5xx. Cap it the way you capped validation retries: one alternate, then stop and log. A fallback that runs after a successful expensive call doubles the bill. A fallback that silently changes the model id will make the eval lie. The trace records which id actually answered.
+
+### Gateways, caching, and bills
+
+The library form of [LiteLLM](https://github.com/BerriAI/litellm) was enough when you had two SDKs. A gateway is that idea as a process: one OpenAI-compatible URL, provider keys that never reach the app, and a number for spend. Add it when a second app or a second person needs the same models. Until then the native SDK and a spend cap on the provider console are the bill.
+
+#### [LiteLLM proxy](https://docs.litellm.ai/docs/proxy/quick_start), [Helicone](https://github.com/Helicone/helicone), and [Portkey](https://github.com/Portkey-AI/gateway)
+
+One gateway for the week.
+
+- **[LiteLLM proxy](https://docs.litellm.ai/docs/proxy/quick_start).** The OpenAI-compatible server from the same project as the library. The quick start listens on port **4000**. Apps send chat completions to it. Virtual keys carry a budget and a model allowlist, and the provider keys stay in the proxy config. Point [Open WebUI](https://docs.litellm.ai/docs/tutorials/openweb_ui) at that URL when the chat should see only the models the key allows. The smoke test is the fixture prompt through the proxy, plus a key whose budget is smaller than a second call: the second call fails closed.
+- **[Helicone](https://docs.helicone.ai/).** A log of requests, latency, and spend, with a gateway in front of the provider when you also want a cache and retries at the network hop. Use it when the question is the bill and the slow calls. Full prompt bodies are a second copy of customer text. Decide whether Helicone or the trace store from the eval chapter keeps those bodies. One of them does.
+- **[Portkey](https://portkey.ai/docs).** A gateway whose config names the provider, the fallbacks, the retries, and the cache. The [open gateway](https://github.com/Portkey-AI/gateway) is the piece you can run yourself. Use it when routing policy is the thing you need to commit, and the app should keep speaking OpenAI-shaped HTTP.
+
+Whichever you pick, the provider dashboard is still there. The gateway number and the provider invoice should be the same order of magnitude at the end of the week. A gap means a call is bypassing the gateway, or a key is still in an app.
+
+#### Token budgets, caching, and cheaper model routing
+
+Write the budget down as a virtual-key limit and as a provider spend cap. Both. The key limit is the one the app hits first.
+
+Caching has two shapes. Provider prompt caches — [OpenAI](https://developers.openai.com/api/docs/guides/prompt-caching), [Anthropic](https://platform.claude.com/docs/en/build-with-claude/prompt-caching), [Gemini](https://ai.google.dev/gemini-api/docs/caching) — reuse a stable prefix: the system rules, the tool list, the long context you send on every call. Keep that prefix byte-stable and put the varying question at the end. A gateway cache reuses an entire request whose body matches. Use it for a classification you are willing to repeat. Leave it off for a tool call that sends, pays, deletes, or reads fresh data.
+
+Cheaper routing is a second model id for a smaller job. Extraction and routing can use a smaller model. The final answer stays on the model the golden set already passes. Swap only when that set still passes on the cheaper id. A router that picks a model by vibes will fail a case you already fixed.
+
+### Adapt a model only when retrieval is not enough
+
+Retrieval, a prompt file, and the golden set are the fixes you have already. Adapt the weights when those three are in place and the model still misses the same cases in the same way: a format, a tone, a tool habit. You also need a written right to the rows. A hunch that "our domain is special" is a prompt edit, then a retrieval edit, then another look at the trace.
+
+#### [PEFT](https://github.com/huggingface/peft), [TRL](https://github.com/huggingface/trl), [Unsloth](https://github.com/unslothai/unsloth), [Axolotl](https://github.com/axolotl-ai-cloud/axolotl), and [LlamaFactory](https://github.com/hiyouga/LLaMA-Factory)
+
+One trainer. The output you keep is an adapter plus the base model id, and the golden set run before and after.
+
+- **[PEFT](https://huggingface.co/docs/peft)** applies a small set of trainable weights, usually a LoRA adapter, on a frozen base from [Transformers](https://github.com/huggingface/transformers). **[TRL](https://huggingface.co/docs/trl)** is the training loop Hugging Face ships for supervised fine-tuning and preference methods. Use this pair when the rest of the stack is already Python and Transformers, and you want the training step in that repo.
+- **[Unsloth](https://unsloth.ai/docs/get-started/fine-tuning-llms-guide)** is the short path on one GPU: a LoRA or QLoRA run, then an export you can serve in [Ollama](https://ollama.com/) or [llama.cpp](https://github.com/ggml-org/llama.cpp). Use it when you have a single machine and you want the guide's path rather than a cluster config.
+- **[Axolotl](https://docs.axolotl.ai/)** is a YAML you commit: model, dataset, adapter, and the train command. Use it when the run may span more than one GPU and the config file is the review artifact.
+- **[LlamaFactory](https://github.com/hiyouga/LLaMA-Factory)** covers the same methods behind a config and a UI. Use it when the person launching the run wants that surface, and the config still lands in Git.
+
+The dataset is a file you can name, with a license note in the commit. Train on a held-out slice of the golden set's inputs only as a temptation you refuse: the cases you grade stay out of the training file.
+
+#### LoRA adapters on a local GPU versus paying for fine-tunes
+
+A **LoRA** adapter is a small file on top of a frozen base. You serve the base plus the adapter with the runner you already trust, and you can delete the adapter without touching the base. The GPU, the base license, and the eval are yours.
+
+A **hosted fine-tune** is a job you pay a provider to run. [OpenAI's fine-tuning guide](https://developers.openai.com/api/docs/guides/fine-tuning) is the pattern: a JSONL you upload, a new model id, then the same API call with that id. Use it when you will not run a GPU and the provider's current terms allow those rows. Read the guide on the day you upload. The model id goes into the golden run the same way any other id does. A fine-tune that skips the golden set is a new model you have not met.
+
+Prefer the adapter when the base is an open weight you already serve. Prefer the hosted job when the base is a hosted model you are not allowed to download. Either way the smoke test is the golden file, before and after, on the id you will actually call in production.
+
+#### [QLoRA (Quantized Low-Rank Adaptation)](https://github.com/artidoro/qlora)
+
+**QLoRA** trains that adapter while the base sits in 4-bit memory, which is how a larger base fits a smaller GPU. The method's reference code is [artidoro/qlora](https://github.com/artidoro/qlora). The 4-bit base in practice comes through [bitsandbytes](https://github.com/bitsandbytes-foundation/bitsandbytes), and [Unsloth](https://unsloth.ai/docs/get-started/fine-tuning-llms-guide) and [Axolotl](https://docs.axolotl.ai/) both run this path. You still save an adapter, and you still serve it on top of a base you can name.
+
+Quantization can drop a case the 16-bit run passed. The golden set after training is the check. If a case fell, the adapter is not ready to ship, however small the file is.
+
+### Privacy, licenses, and data you must not train on
+
+Shipping adds copies: the UI database, the gateway log, the trace store, the provider. Each copy needs an owner and a retention clock. Training adds a permanent copy inside the weights. That one needs a right, not only a clock.
+
+#### Open weights versus open source
+
+An **open-weight** checkpoint is a file you can download and run. An **open-source** release includes source you can inspect under a license that allows use, modification, and sharing. The weights and the serving code are different objects. [llama.cpp](https://github.com/ggml-org/llama.cpp) and [vLLM](https://github.com/vllm-project/vllm) can be permissively licensed while the checkpoint on the [Hub](https://huggingface.co/models) carries a custom license: a commercial limit, a user-count line, or a ban on using the outputs to train another model. The [model card](https://huggingface.co/docs/hub/en/model-cards) is the page that says which. The dataset card is the page that says whether a fine-tune corpus is even allowed. Read both before the adapter run, the same way the intro told you to.
+
+#### Customer data, logs, and retention
+
+A production prompt is customer data the moment it contains a ticket, a name, or a source file you do not own. The guardrails chapter already masks PII before the trace. Do that before the gateway log and before the UI volume as well. Set a retention period on each store, and read the provider's current data-use terms on the API product you actually call. API terms and the consumer chat product differ. A setting you have not opened is a default you have accepted.
+
+The training file is a stronger copy than a log. Leave customer tickets, production logs, and third-party text out of it unless a written right covers that use. If you cannot point at the right, stay on retrieval. The dataset path in the training config is a path you can defend in review.
+
+### Summary: Shipping, Cost, and Operations
+
+Ship the loop you already test: one UI ([Open WebUI](https://github.com/open-webui/open-webui), [Lobe Chat](https://github.com/lobehub/lobe-chat), or a [Vercel AI SDK](https://ai-sdk.dev/) page), streaming with a timeout, and a single fallback that the trace names. Put a gateway in front when a second caller needs the models — [LiteLLM proxy](https://docs.litellm.ai/docs/proxy/quick_start), [Helicone](https://github.com/Helicone/helicone), or [Portkey](https://github.com/Portkey-AI/gateway) — with a virtual-key budget, a stable prefix for the provider's prompt cache, and the golden set before any cheaper model id. Adapt weights only after retrieval and the prompt have failed the same cases, with [PEFT](https://github.com/huggingface/peft) and [TRL](https://huggingface.co/docs/trl), [Unsloth](https://github.com/unslothai/unsloth), [Axolotl](https://github.com/axolotl-ai-cloud/axolotl), or [LlamaFactory](https://github.com/hiyouga/LLaMA-Factory), and use [QLoRA](https://github.com/artidoro/qlora) when the base has to sit in 4-bit memory. Read the model card, and keep customer data out of the training file. Next is **Common Challenges and Debugging Tips**, where a failed run has an order: prompt, context, tools, then the model.

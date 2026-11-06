@@ -1709,6 +1709,125 @@
 * [Whisper](https://github.com/openai/whisper) or [whisper.cpp](https://github.com/ggml-org/whisper.cpp) on one sentence; [LiveKit Agents](https://github.com/livekit/agents) for one room <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
 * Vision on the API you already call; a screenshot when the screen is the evidence <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
 * Next loop: Shipping, Cost, and Operations <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+## Shipping, Cost, and Operations <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* The same loop, behind a URL, with a bill and a limit that fails closed <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* One surface, one gateway, one budget <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* An adapter comes after retrieval and the golden set <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Productize the working loop <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* The smoke-test sentence, answered through a UI, key still on a server <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The chat history is a log <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Open WebUI, Lobe Chat, and your own thin UI <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [Open WebUI](https://github.com/open-webui/open-webui): accounts and a chat in front of a model you already run <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Lobe Chat](https://github.com/lobehub/lobe-chat): a self-hosted multi-provider chat <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Vercel AI SDK](https://ai-sdk.dev/) when chat is a feature inside your product <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Script passes and UI fails: the bug is in the UI <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Streaming, timeouts, and fallbacks <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Stream for a person waiting; grade the finished answer <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A timeout longer than a normal answer and shorter than a hung socket <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* One fallback on 429 or 5xx, named in the trace, then stop <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Gateways, caching, and bills <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* One OpenAI-compatible URL; provider keys stay off the app <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The gateway total and the provider invoice belong in the same range <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### LiteLLM proxy, Helicone, and Portkey <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [LiteLLM proxy](https://docs.litellm.ai/docs/proxy/quick_start): port 4000, virtual keys, a budget that fails closed <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Helicone](https://github.com/Helicone/helicone): spend, latency, and a cache; one store keeps the prompt bodies <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Portkey](https://github.com/Portkey-AI/gateway): routing, fallbacks, and cache as config you commit <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Token budgets, caching, and cheaper model routing <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* A virtual-key limit and a provider spend cap <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A stable prefix for [OpenAI](https://developers.openai.com/api/docs/guides/prompt-caching), [Anthropic](https://platform.claude.com/docs/en/build-with-claude/prompt-caching), or [Gemini](https://ai.google.dev/gemini-api/docs/caching) prompt caches <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A cheaper model id only after the golden set still passes <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Adapt a model only when retrieval is not enough <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Same misses, after the prompt and the index, plus a written right to the rows <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The golden cases stay out of the training file <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### PEFT, TRL, Unsloth, Axolotl, and LlamaFactory <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [PEFT](https://github.com/huggingface/peft) and [TRL](https://github.com/huggingface/trl) when the stack is already Transformers <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Unsloth](https://github.com/unslothai/unsloth) on one GPU, then export to Ollama or llama.cpp <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [Axolotl](https://github.com/axolotl-ai-cloud/axolotl): a YAML you commit <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [LlamaFactory](https://github.com/hiyouga/LLaMA-Factory): the same methods behind a config and a UI <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### LoRA adapters on a local GPU versus paying for fine-tunes <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* A LoRA file on a frozen base you already serve <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A [hosted fine-tune](https://developers.openai.com/api/docs/guides/fine-tuning): a JSONL, a new model id, the same golden run <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### QLoRA (Quantized Low-Rank Adaptation) <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* [QLoRA](https://github.com/artidoro/qlora): the adapter trains while the base sits in 4-bit memory <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [bitsandbytes](https://github.com/bitsandbytes-foundation/bitsandbytes) is the usual 4-bit base <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A dropped golden case means the adapter stays unshipped <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Privacy, licenses, and data you must not train on <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Every log is a copy with an owner and a retention clock <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Training is a permanent copy and needs a right <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Open weights versus open source <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Open weights: a file you can download and run <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The serving code's license and the checkpoint's license are different pages <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Read the [model card](https://huggingface.co/docs/hub/en/model-cards) and the dataset card before the adapter run <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Customer data, logs, and retention <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Mask PII before the gateway log and the UI volume <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* API terms and the consumer chat product differ; open the setting <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Tickets, production logs, and third-party text stay out of the training file without a written right <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Summary: Shipping, Cost, and Operations <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* One UI, a timeout, one named fallback <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* [LiteLLM](https://docs.litellm.ai/docs/proxy/quick_start), [Helicone](https://github.com/Helicone/helicone), or [Portkey](https://github.com/Portkey-AI/gateway), with a budget <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* An adapter only after retrieval fails the same cases, then the golden set again <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The model card and a training file you can defend <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Next loop: Common Challenges and Debugging Tips <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
 					</textarea>
 				</section>
 			</div>
