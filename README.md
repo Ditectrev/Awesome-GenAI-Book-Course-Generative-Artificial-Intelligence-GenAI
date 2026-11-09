@@ -1971,3 +1971,100 @@ The training file is a stronger copy than a log. Leave customer tickets, product
 ### Summary: Shipping, Cost, and Operations
 
 Ship the loop you already test: one UI ([Open WebUI](https://github.com/open-webui/open-webui), [Lobe Chat](https://github.com/lobehub/lobe-chat), or a [Vercel AI SDK](https://ai-sdk.dev/) page), streaming with a timeout, and a single fallback that the trace names. Put a gateway in front when a second caller needs the models — [LiteLLM proxy](https://docs.litellm.ai/docs/proxy/quick_start), [Helicone](https://github.com/Helicone/helicone), or [Portkey](https://github.com/Portkey-AI/gateway) — with a virtual-key budget, a stable prefix for the provider's prompt cache, and the golden set before any cheaper model id. Adapt weights only after retrieval and the prompt have failed the same cases, with [PEFT](https://github.com/huggingface/peft) and [TRL](https://huggingface.co/docs/trl), [Unsloth](https://github.com/unslothai/unsloth), [Axolotl](https://github.com/axolotl-ai-cloud/axolotl), or [LlamaFactory](https://github.com/hiyouga/LLaMA-Factory), and use [QLoRA](https://github.com/artidoro/qlora) when the base has to sit in 4-bit memory. Read the model card, and keep customer data out of the training file. Next is **Common Challenges and Debugging Tips**, where a failed run has an order: prompt, context, tools, then the model.
+
+## Common Challenges and Debugging Tips
+
+A failed run is a case you can replay. Keep the fixture, the prompt file, and the model id fixed, and change one layer. This chapter is the order for that change. It points back at loops you already have: the smoke test, the golden file, the trace, the diff, and the bill. A new model id is the last experiment, after the prompt, the context, and the tools have each had a rerun.
+
+### Hallucinations, refusals, and silent tool failures
+
+These three look similar in a chat window and mean different bugs.
+
+- A **hallucination** is a fluent answer the evidence does not support. The chunks, the tool result, or the schema said something else, or said nothing, and the model filled the gap. The faithfulness check from the eval chapter is this failure in number form. The citation that names a file you never passed in is the same failure in one line.
+- A **refusal** is the model declining. Read the text. On a request the product must decline, the refusal is a pass, and it belongs in the golden set. On the smoke-test sentence, a refusal means a rail, a safety filter, or the prompt asked for something the model will not do. Fix that layer. Shopping for a model that "will just say yes" skips the bug.
+- A **silent tool failure** is an answer that looks finished while the tool never ran, or ran and the error was dropped. The trace is the record. The expected tool name is absent, or the tool span holds an error and the final sentence still says the action succeeded. Grade the span, not the prose.
+
+Write down which of the three you have before you edit anything. The fix for one makes the other two worse when you apply it blindly.
+
+#### A debug order: prompt, context, tools, then the model
+
+Replay the same case and walk the layers in this order. Stop at the first layer that explains the failure.
+
+1. **Prompt.** Open the file in Git, not the chat scroll. The contract, the schema, and the instruction to answer only from the supplied evidence live there. Rerun the same model id. If the fixture passes, the bug was an uncommitted edit or a prompt the UI is not loading.
+2. **Context.** Read what actually entered the window: system rules, retrieved chunks, tool results, history, and anything a compaction step summarized. The trace from [Langfuse](https://github.com/langfuse/langfuse), [Phoenix](https://github.com/Arize-ai/phoenix), or [LangSmith](https://docs.langchain.com/langsmith/home) is the place to look. A missing chunk, a summary that dropped the rule, or a prefix the cache reused from the wrong version is a context bug. The prompt file can be perfect and still lose.
+3. **Tools.** Check the allowlist, the call, and the result. A tool off the list cannot have succeeded. A denial is a stop, not a retry. An empty result is data. Pass it back as an observation the model must deal with, and fail the case when the final answer claims a success the tool span does not show.
+4. **Model.** Change the id last, and only with the same prompt, the same context, and the same assertion. A new model on a broken prompt moves the failure. When the first three layers are clean and the case still fails, the model id is a fair experiment. Record both ids in the golden run.
+
+One change per rerun. The working loop from the first chapters is the debug loop.
+
+### The agent rewrote the wrong files
+
+The diff is the observation, the same way a tool span is the observation. A green test suite on a patch that edits files outside the task is still a failed run. Open the diff before you read the agent's summary of what it did.
+
+#### Smaller diffs, tests first, and skill-driven review
+
+Keep the task inside one directory and say so in [AGENTS.md](https://agents.md/) or the equivalent rules file. Ask for the failing test first, then the change that makes that test pass. The project's test command is the done check from the coding-agent chapter. A review skill, or the code-review loop you already installed, reads the diff against that scope.
+
+When the diff touches a file the task did not name, revert that hunk and rerun. Shrink the allowlist of paths, or add a hook that rejects a push, before you change the model. The sandbox from the harness chapter is the same control: a writable copy, and a denial in the trace when the agent tries to leave it.
+
+### RAG returned the wrong paragraph
+
+Print the retrieved chunks for the question before you touch the generation prompt. The RAG chapter's rule still holds: the right chunk is in the list, or you are editing the wrong layer. Five questions with expected quotes are enough to see which question broke.
+
+#### Chunking, metadata, and hybrid search checks
+
+Walk the index in the same order you built it.
+
+- **Chunking.** A heading, a page, or a row that got split away from its title will retrieve as a fragment. Chunk on that structure, with a small overlap, and reread one file's chunks. A table that became a blob of numbers is a partition bug in [Unstructured](https://github.com/Unstructured-IO/unstructured) or [Docling](https://github.com/docling-project/docling). Fix the partition, then re-embed.
+- **Metadata.** Source, page, heading, and date are how you filter "the current handbook" out of a pile. If the right paragraph is in the index and the filter dropped it, the filter is the bug. If the paragraph is absent from the index, retrieval cannot invent it.
+- **Hybrid search.** Keyword plus vector, then a reranker, is the check when the right page uses the user's words and the vector search still misses. The citation on the answer has to be a chunk id you actually passed in. Two embedding models in one index produce neighbors that are not neighbors. One embedding model id, logged next to the chat model id.
+
+Change chunk size, metadata, or k, and rerun the five questions. Leave the generation prompt alone until those questions return the quote.
+
+### Local model quality collapsed
+
+Run the hosted smoke test and the local smoke test on the same prompt file. If the hosted model passes and the local one fails, the weights, the context, or the sampler changed. The prompt is the control, and it stays put.
+
+#### Quantization, context length, and sampler settings
+
+- **Quantization.** The quant is part of the model you pulled, whether the tag says so or the GGUF filename does. A smaller quant frees memory and can drop the fixture the larger file still passes. Step up one quant, or one parameter size, and rerun the same assertion. A QLoRA adapter has the same trap: if the golden case fell after the 4-bit run, the adapter is not ready.
+- **Context length.** The runner's context has to hold the prompt and the reply. A short context truncates, and the model then ignores instructions you can still see in the file. Count the prompt tokens and set the context above that count, with room for the answer. If the process dies on allocate, lower the context or the concurrency, as the local-models chapter already said, and rerun before you rewrite the prompt.
+- **Sampler settings.** Temperature `0`, or the provider's most deterministic setting, is the right sampler for a fixture that must match. A high temperature makes that fixture flake and looks like a quality collapse. Move one knob — temperature, then top-p — and rerun. Leave the quant and the context where they are while you do.
+
+Write the quant, the context length, and the temperature next to the model id in the note for the run. The next person can replay the failure.
+
+### Spend spiked overnight
+
+Open the gateway log and the provider invoice side by side. Find the key, the model id, and the hour the curve bent. A spike is a loop: retries, a fallback that ran on successes, an agent without a step cap, a voice room left open, or an image call inside a retry. The trace shows which.
+
+#### Caps, tracing, and cheaper defaults
+
+The virtual-key budget and the provider spend cap from the shipping chapter are the brakes. A key that can spend without a ceiling will, and the morning invoice is the report. Set the ceiling where a runaway hour fails closed, then confirm it with a fixture key whose budget is smaller than two calls.
+
+Tracing tells you which loop to cap. A step cap on the agent, a timeout on the stream, and a single fallback on 429 or 5xx stop the patterns that show up in the spans. Cheaper defaults come after that, and only for the job whose golden set still passes on the smaller id. Moving the final answer to a cheaper model to hide a spike, without that rerun, trades a bill for a silent quality drop.
+
+### A 30-day practice plan
+
+Thirty days is enough to own one loop. It is not enough to install every tool in the table of contents. Each week ends with a rerun of the same assertion.
+
+- **Days 1–7.** One provider, one spend cap, one smoke-test sentence, the prompt file in Git. The call is non-streaming and from a native SDK. Keys stay in the environment.
+- **Days 8–14.** Stay with one coding agent, or with one local runner if the work is local. Add one skill or one `AGENTS.md`, and make the done check a test or the smoke sentence. Read one diff all the way through.
+- **Days 15–21.** Add one structured output or the five RAG questions. Score retrieval, or the schema, before you edit the prompt. Log the model id and, for RAG, the embedding id.
+- **Days 22–30.** Put the golden file on a command you actually run. Turn on one trace viewer. Add one budget that fails closed. Take one real failure and walk prompt, context, tools, then the model. Write down which layer you changed.
+
+Skip the weeks that are not your job. A team that will only call a hosted API still finishes with a cap, a golden file, and a trace. A team that only runs local still finishes with the quant, the context, and the same assertion.
+
+#### What done looks like after one month
+
+You can point at four things without opening a chat history.
+
+- The model id, the prompt version, and the assertion, in files you can commit.
+- A command that fails when the fixture answer is wrong.
+- A trace of one run where a tool call, a retrieved chunk, or a refusal is visible.
+- A budget that stops a key, and a short note on one real failure: which layer you changed, and the rerun that passed.
+
+An adapter, a second gateway, and a second modality can wait. They are useful when this list is already true. Until then they add surfaces that hide the next bug.
+
+### Summary: Common Challenges and Debugging Tips
+
+Replay the case and change one layer: prompt, context, tools, then the model. A hallucination fails the evidence check, a refusal on the smoke test is a rail or a prompt, and a silent tool failure is a span that does not match the prose. An agent that rewrote the wrong files fails the diff. A wrong RAG paragraph fails the chunk list, so you fix chunking, metadata, or hybrid search before the generation prompt. A local model that collapsed gets a larger quant, a context that fits the prompt, or a deterministic sampler, one at a time. A spend spike gets a cap, a trace, and a cheaper default only after the golden set passes. After a month you can name the id, fail a fixture on purpose, see one trace, and stop a key. Next is **Additional Resources and Reading Materials**, a catalog of the tools and reading this book already put to work.
