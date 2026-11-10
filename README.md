@@ -2068,3 +2068,69 @@ An adapter, a second gateway, and a second modality can wait. They are useful wh
 ### Summary: Common Challenges and Debugging Tips
 
 Replay the case and change one layer: prompt, context, tools, then the model. A hallucination fails the evidence check, a refusal on the smoke test is a rail or a prompt, and a silent tool failure is a span that does not match the prose. An agent that rewrote the wrong files fails the diff. A wrong RAG paragraph fails the chunk list, so you fix chunking, metadata, or hybrid search before the generation prompt. A local model that collapsed gets a larger quant, a context that fits the prompt, or a deterministic sampler, one at a time. A spend spike gets a cap, a trace, and a cheaper default only after the golden set passes. After a month you can name the id, fail a fixture on purpose, see one trace, and stop a key. Next is **Additional Resources and Reading Materials**, a catalog of the tools and reading this book already put to work.
+
+## Additional Resources and Reading Materials
+
+This chapter is the index. Each link is a tool or a paper a chapter already put to work. Open the one that matches the job in front of you, and leave the rest installed nowhere. The procedure stays in the chapter that taught it. Image, speech, and adapter tools stay in their chapters too: [Diffusers](https://github.com/huggingface/diffusers), [ComfyUI](https://github.com/Comfy-Org/ComfyUI), [Whisper](https://github.com/openai/whisper), [whisper.cpp](https://github.com/ggml-org/whisper.cpp), [LiveKit Agents](https://github.com/livekit/agents), [PEFT](https://github.com/huggingface/peft), [TRL](https://github.com/huggingface/trl), [Unsloth](https://github.com/unslothai/unsloth), [Axolotl](https://github.com/axolotl-ai-cloud/axolotl), [LlamaFactory](https://github.com/hiyouga/LLaMA-Factory), and the [QLoRA](https://github.com/artidoro/qlora) reference.
+
+### Recommended Tools and Software for GenAI
+
+Pick from the row that matches the layer you are debugging: the host, the runner, the agent, or the check. A second tool in the same row waits until the first one has a passing smoke test.
+
+#### Hosted model platforms
+
+Call one of these with a spend cap and a native SDK before you add a router.
+
+- **[OpenAI Platform](https://platform.openai.com/)** — [openai-python](https://github.com/openai/openai-python), [OpenAI Node SDK](https://github.com/openai/openai-node). Chat, structured outputs, tools, images, and speech. Copy the current model id from the guide on the day you run.
+- **[Anthropic Console](https://console.anthropic.com/)** — [anthropic Python](https://github.com/anthropics/anthropic-sdk-python), [TypeScript](https://github.com/anthropics/anthropic-sdk-typescript).
+- **[Google AI Studio](https://aistudio.google.com/)** and the **[Gemini API](https://ai.google.dev/gemini-api/docs)** — [google-genai](https://github.com/googleapis/python-genai).
+- **[Mistral](https://console.mistral.ai/)** — [mistralai Python](https://github.com/mistralai/client-python), [TypeScript](https://github.com/mistralai/client-ts). Hosted APIs and open-weight checkpoints on the Hub.
+- **[DeepSeek](https://platform.deepseek.com/)** — OpenAI-compatible API, [docs](https://api-docs.deepseek.com/), weights such as [DeepSeek-V3](https://github.com/deepseek-ai/DeepSeek-V3).
+- **[Groq](https://groq.com/)** — hosted, fast, often serving open weights you could also run yourself.
+- **[Hugging Face Hub](https://huggingface.co/)** — model cards, datasets, and tokens. [huggingface_hub](https://github.com/huggingface/huggingface_hub), [Transformers](https://github.com/huggingface/transformers), [Datasets](https://github.com/huggingface/datasets).
+- **[LiteLLM](https://github.com/BerriAI/litellm)** when the second SDK appears. The [proxy](https://docs.litellm.ai/docs/proxy/quick_start) is the gateway, with virtual keys and budgets. **[OpenRouter](https://openrouter.ai/docs)** is the hosted catalog. **[Vercel AI SDK](https://ai-sdk.dev/)** is the thin UI. **[Helicone](https://github.com/Helicone/helicone)** and **[Portkey](https://github.com/Portkey-AI/gateway)** are the other gateways from the shipping chapter. One of them.
+
+#### Local runtimes and serving engines
+
+A checkpoint on disk and a server you can restart.
+
+- **[Ollama](https://ollama.com/)** for everyday local chat and an OpenAI-compatible API on port 11434.
+- **[llama.cpp](https://github.com/ggml-org/llama.cpp)** when you need the GGUF file, the context length, and the GPU layers.
+- **[Open WebUI](https://github.com/open-webui/open-webui)** in front of either, when you want a browser chat. The script stays the smoke test. **[Lobe Chat](https://github.com/lobehub/lobe-chat)** is the other self-hosted chat from the shipping chapter.
+- **[vLLM](https://github.com/vllm-project/vllm)** or **[SGLang](https://github.com/sgl-project/sglang)** when one laptop is no longer enough and you have an NVIDIA GPU.
+- **[Text Generation Inference](https://github.com/huggingface/text-generation-inference)** is in maintenance mode as of 11 December 2025. Read it if you inherited a deployment. Start a new server on vLLM or SGLang.
+
+#### Coding agents and skill catalogs
+
+Stay with one agent for a week. Change its defaults with a skill, not with a second agent.
+
+- **[Cursor](https://cursor.com/)**, **[Claude Code](https://github.com/anthropics/claude-code)**, **[Codex](https://github.com/openai/codex)**, **[GitHub Copilot](https://github.com/features/copilot)**. Terminal alternatives: **[Aider](https://github.com/Aider-AI/aider)**, **[OpenCode](https://github.com/sst/opencode)**.
+- **[Agent Skills](https://github.com/agentskills/agentskills)** is the `SKILL.md` format. **[Skills for Real Engineers](https://github.com/mattpocock/skills)** is the pack to install and edit. **[Anthropic skills](https://github.com/anthropics/skills)** is a public catalog. **[skills.sh](https://www.skills.sh/)** copies files onto disk. A plugin auto-updates. Use one installer.
+- **[AGENTS.md](https://agents.md/)** for the repo note every agent can read. **[Spec Kit](https://github.com/github/spec-kit)**, **[BMAD](https://github.com/bmad-code-org/BMAD-METHOD)**, and **[GSD](https://github.com/gsd-build/get-shit-done)** are process packs. A thin skill is the default. A pack is for a team that will actually follow it.
+- **[Continue](https://github.com/continuedev/continue)** is read-only after the Cursor acquisition. Keep an existing install pinned. Start a new repo on an agent that still ships.
+
+#### RAG, agents, MCP, and evaluation repositories
+
+One framework in each group. The golden file from the eval chapter is how you know the choice worked.
+
+- **Retrieval.** [LlamaIndex](https://github.com/run-llama/llama_index), [LangChain](https://github.com/langchain-ai/langchain), or [Haystack](https://github.com/deepset-ai/haystack) for the pipeline. [Unstructured](https://github.com/Unstructured-IO/unstructured) and [Docling](https://github.com/docling-project/docling) for files. [Firecrawl](https://github.com/mendableai/firecrawl) and [Crawl4AI](https://github.com/unclecode/crawl4ai) for sites. [Chroma](https://github.com/chroma-core/chroma) first, then [Qdrant](https://github.com/qdrant/qdrant), [Weaviate](https://github.com/weaviate/weaviate), or [Milvus](https://github.com/milvus-io/milvus). [GraphRAG](https://github.com/microsoft/graphrag) when the question is about relationships, not a paragraph.
+- **Agents.** [LangGraph](https://github.com/langchain-ai/langgraph) for checkpoints. [OpenAI Agents SDK](https://github.com/openai/openai-agents-python) for a small in-process runner. [CrewAI](https://github.com/crewAIInc/crewAI) when a flow should wrap a crew. [Microsoft Agent Framework](https://github.com/microsoft/agent-framework) for new work that would have been AutoGen. [smolagents](https://github.com/huggingface/smolagents) when the action is code in a sandbox. [Mastra](https://github.com/mastra-ai/mastra) for TypeScript. [Playwright](https://playwright.dev/) or [Stagehand](https://github.com/browserbase/stagehand) for the browser. [n8n](https://github.com/n8n-io/n8n), [Dify](https://github.com/langgenius/dify), [Flowise](https://github.com/FlowiseAI/Flowise), or [Langflow](https://github.com/langflow-ai/langflow) when two people must see the path. Memory: [Mem0](https://github.com/mem0ai/mem0), [Letta](https://github.com/letta-ai/letta), [Graphiti](https://github.com/getzep/graphiti).
+- **MCP.** The [specification](https://modelcontextprotocol.io/) (revision 2026-07-28 in the MCP chapter), [reference servers](https://github.com/modelcontextprotocol/servers), the [Python SDK](https://github.com/modelcontextprotocol/python-sdk), and the [TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk). One read-only tool, then an allowlist.
+- **Harnesses and evals.** [OpenHands](https://github.com/OpenHands/OpenHands), [SWE-agent](https://github.com/SWE-agent/SWE-agent), and [E2B](https://github.com/e2b-dev/E2B) when you outgrow the product harness. [SWE-bench](https://github.com/SWE-bench/SWE-bench) and [Inspect](https://github.com/UKGovernmentBEIS/inspect_ai) score a repo patch. [promptfoo](https://github.com/promptfoo/promptfoo) scores a prompt and a red-team suite. [Ragas](https://github.com/explodinggradients/ragas) or [DeepEval](https://github.com/confident-ai/deepeval) scores a RAG answer. Traces: [Langfuse](https://github.com/langfuse/langfuse), [Phoenix](https://github.com/Arize-ai/phoenix), [LangSmith](https://docs.langchain.com/langsmith/home). Safety checks: [NeMo Guardrails](https://github.com/NVIDIA/NeMo-Guardrails) or [Guardrails AI](https://github.com/guardrails-ai/guardrails), and [Presidio](https://github.com/microsoft/presidio) for redaction.
+
+### Further Reading and Industry Publications
+
+The provider docs are the living reference for request fields and model ids. The papers below are the original claims for the methods this book uses. Read a paper when you need to know what the method was for. Read a model card when you need to know what you are allowed to do with a checkpoint.
+
+- **[Attention Is All You Need](https://arxiv.org/abs/1706.03762).** The transformer paper. Useful when a blog uses "attention" as a mood.
+- **[Retrieval-Augmented Generation](https://arxiv.org/abs/2005.11401).** Lewis et al. The reason a retrieved paragraph is evidence and the model is the writer.
+- **[InstructGPT](https://arxiv.org/abs/2203.02155).** The training story behind instruction following and preference data. The intro's training section is the short version.
+- **[LoRA](https://arxiv.org/abs/2106.09685)** and **[QLoRA](https://arxiv.org/abs/2305.14314).** Adapters, and adapters on a quantized base. Read them before you spend a GPU week.
+- **[MCP specification](https://modelcontextprotocol.io/specification/2026-07-28)** and the [spec repository](https://github.com/modelcontextprotocol/specification). The revision the MCP chapter pinned. Check the site for a newer revision before you depend on a detail.
+- **[OWASP Top 10 for LLM Applications](https://genai.owasp.org/llm-top-10/).** The 2026 list: prompt injection, sensitive data, excessive agency, unbounded consumption, and the rest. It names the failures. The golden cases and the rails in the eval chapter are how you test them.
+
+When a doc and a blog disagree, trust the doc, then rerun the smoke test. A model card and a dataset card still outrank a README that forgot the license.
+
+### Summary: Additional Resources and Reading Materials
+
+The catalog is the index, not a second project. Hosted calls start at [OpenAI](https://platform.openai.com/), [Anthropic](https://console.anthropic.com/), [Gemini](https://ai.google.dev/gemini-api/docs), [Mistral](https://console.mistral.ai/), [DeepSeek](https://platform.deepseek.com/), or [Groq](https://groq.com/), with [LiteLLM](https://github.com/BerriAI/litellm) when you need one URL. Local calls start at [Ollama](https://ollama.com/) or [llama.cpp](https://github.com/ggml-org/llama.cpp), and move to [vLLM](https://github.com/vllm-project/vllm) or [SGLang](https://github.com/sgl-project/sglang) when the laptop is the wrong machine. One coding agent, one skill pack, one retrieval stack, one agent framework, one eval. The papers — the [transformer](https://arxiv.org/abs/1706.03762), [RAG](https://arxiv.org/abs/2005.11401), [InstructGPT](https://arxiv.org/abs/2203.02155), [LoRA](https://arxiv.org/abs/2106.09685), [QLoRA](https://arxiv.org/abs/2305.14314) — and the [OWASP LLM Top 10](https://genai.owasp.org/llm-top-10/) are there when you need the claim or the failure mode by its public name. The work on Monday is still the smoke test: one model id, one assertion, one change.
