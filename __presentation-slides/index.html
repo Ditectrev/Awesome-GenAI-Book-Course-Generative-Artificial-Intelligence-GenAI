@@ -1828,6 +1828,119 @@
 * An adapter only after retrieval fails the same cases, then the golden set again <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
 * The model card and a training file you can defend <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
 * Next loop: Common Challenges and Debugging Tips <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+## Common Challenges and Debugging Tips <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Replay the fixture; change one layer <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The model id is the last experiment <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Hallucinations, refusals, and silent tool failures <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Hallucination: the evidence does not support the answer <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Refusal: a pass when the product must decline; a rail or a prompt when the smoke test was fair <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Silent tool failure: the prose says success and the span does not <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### A debug order: prompt, context, tools, then the model <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Prompt file in Git, same model id, rerun <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Context is what the trace shows entered the window <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Tools: allowlist, call, result; an empty result is data <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Change the model id only after those three are clean <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### The agent rewrote the wrong files <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* The diff is the observation <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A green test suite on an out-of-scope edit is still a failed run <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Smaller diffs, tests first, and skill-driven review <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* One directory, named in [AGENTS.md](https://agents.md/) <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The failing test first, then the change that makes it pass <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Revert the extra hunk; shrink the path allowlist before you change the model <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### RAG returned the wrong paragraph <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Print the chunks before you edit the generation prompt <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Five questions, five expected quotes <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Chunking, metadata, and hybrid search checks <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* A title split from its paragraph is a chunking bug <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A filter that drops the right page is a metadata bug <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Hybrid search plus a reranker when the words are right and the vector misses <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* One embedding model id in the index <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Local model quality collapsed <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Same prompt file on the hosted model and the local one <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The prompt stays put while you change the runner <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Quantization, context length, and sampler settings <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Step up one quant, or one parameter size, and rerun the same assertion <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Context holds the prompt and the reply; truncation looks like a stubborn model <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Temperature `0` for a fixture that must match; one sampler knob at a time <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Spend spiked overnight <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Gateway log beside the provider invoice <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The key, the model id, and the hour the curve bent <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### Caps, tracing, and cheaper defaults <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* A virtual-key budget and a provider cap that fail closed <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* The trace names the loop: retries, a fallback, a room left open <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A cheaper model id only after the golden set still passes <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### A 30-day practice plan <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* One loop, not every tool in the table of contents <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Week 1: one host, one cap, one smoke sentence, the prompt in Git <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Week 2: one agent or one local runner, and a diff you actually read <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Week 3: a schema or five RAG questions, scored before the prompt changes <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Week 4: a golden command, one trace, one budget, one failure walked in order <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+#### What done looks like after one month <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Model id, prompt version, and assertion in files you can commit <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A command that fails when the fixture is wrong <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* One trace where a tool call, a chunk, or a refusal is visible <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* A budget that stops a key, and a note on which layer you changed <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+
+---
+
+### Summary: Common Challenges and Debugging Tips <!-- .slide: data-transition="zoom" data-transition-speed="slow" -->
+
+* Prompt, context, tools, then the model <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Grade the diff, the chunks, the quant, and the bill the same way <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* After a month: an id, a failing command, a trace, and a cap <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
+* Next loop: Additional Resources and Reading Materials <!-- .element: class="fragment custom blur highlight-current-blue fade-up" -->
 					</textarea>
 				</section>
 			</div>
